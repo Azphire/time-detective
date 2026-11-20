@@ -149,7 +149,7 @@
         when:c => !c.w.ordered && c.at('wife', 'milk') && c.room('fu') === '餐车' && c.awake('fu'),
         act:c => { c.w.ordered = true; } },
       { id:'he-drug', who:'贺老板',
-        truth:'贺老板和太太醒着待在一起、身边没有别的客人时（列车员和侍应不算），会趁她不注意往她的杯子里加安眠药。太太回到包厢就会睡着，喝了咖啡也撑不住。',
+        truth:'太太醒着，贺老板就没法溜出去找苏小姐。所以两人醒着待在一起、身边没有别的客人时（列车员和侍应不算），他会趁她不注意往她的杯子里加安眠药。太太回到包厢就会睡着，喝了咖啡也撑不住。',
         clue:c => ({ room:c.room('wife'), text:'贺太太的杯底有一层没化开的白色粉末。' }),
         when:c => !c.w.wifeDrugged && c.awake('wife') && c.awake('he') && c.room('he') === c.room('wife')
           && guests(c.awakeIn(c.room('he'), 'he')).length === 1,
