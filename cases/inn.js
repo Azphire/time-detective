@@ -35,6 +35,8 @@
       { open:true, id:'all', name:'豆沙了！', desc:'04:00 前，让所有人都在游戏里死一次。', test:x => x.r.end.ok },
       { id:'habit', name:'职业病发作', desc:'一个人都没死。', test:x => Object.keys(x.r.end.dead || {}).length === 0 },
       { id:'one', name:'轮到你了……吗？', desc:'六个人下线了，只剩一个人困在游戏里。', test:x => Object.keys(x.r.end.dead || {}).length === 6 },
+      { id:'peep', name:'登徒子！', desc:'秦姑娘在天字房外偷看时，白少爷正好在换衣服。',
+        test:x => x.r.hours.some(h => !h.cut && h.pos.qin.node === 'peek' && h.pos.bai.node === 'change') },
       { id:'cure', name:'妙手回春', desc:'有人中了毒，又被救了回来。', test:x => x.fired.has('sun-cure') || x.fired.has('self-cure') },
       { id:'paths', name:'全图探索', desc:'在推演中走遍每一条岔路。', test:x => x.cs.chars.every(ch => ch.order.every(n => x.s.revealed.has(n.id))) },
       { id:'sys', name:'系统提示', desc:'推演了 10 次，第一条提示自动揭开了。', test:x => x.s.runs.length >= 10 },
