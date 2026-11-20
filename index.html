@@ -17,9 +17,11 @@
   .num{ font-variant-numeric:tabular-nums; }
 
   /* top */
-  .top{ display:flex; align-items:center; gap:28px; padding:0 32px; border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:10; flex-wrap:wrap; }
-  .brand .motto{ font-weight:400; letter-spacing:.02em; color:var(--muted); margin-left:2px; }
-  .brand{ font-weight:600; letter-spacing:.12em; padding:14px 0; }
+  .top{ display:flex; align-items:flex-end; gap:28px; padding:0 32px; border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:10; flex-wrap:wrap; }
+  .brand{ padding:12px 0 11px; }
+  .brand .name{ font-weight:600; letter-spacing:.12em; line-height:1.4; }
+  .brand .motto span{ display:inline-block; white-space:nowrap; }
+  .brand .motto{ display:block; font-size:12px; font-weight:400; letter-spacing:.02em; color:var(--muted); line-height:1.5; margin-top:2px; }
   #tabs{ display:flex; gap:24px; flex:1; }
   #tabs[hidden]{ display:none; }
   .top .spacer{ flex:1; }
@@ -27,7 +29,7 @@
   .tab:hover{ color:var(--ink); }
   .tab.cur{ color:var(--ink); border-bottom-color:var(--ink); font-weight:600; }
   .tab .ck{ color:var(--ok); margin-left:4px; }
-  #runCount{ font-size:13px; color:var(--muted); }
+  #runCount{ font-size:13px; color:var(--muted); padding-bottom:13px; }
 
   main{ max-width:1640px; margin:0 auto; padding:40px 32px 80px; }
   section{ margin-bottom:44px; }
@@ -222,7 +224,8 @@
   @media (max-width:760px){
     .top{ padding:0 18px; gap:14px; } main{ padding:28px 18px 60px; }
     #tabs{ order:3; flex-basis:100%; gap:18px; overflow-x:auto; }
-    .brand .motto{ display:none; }
+    .brand{ flex:1; min-width:0; padding-bottom:4px; }
+    #runCount{ align-self:flex-start; padding:14px 0 0; white-space:nowrap; }
     .top .spacer{ display:none; }
     .two{ grid-template-columns:1fr; }
     .truth li{ grid-template-columns:1fr; gap:2px; }
@@ -231,7 +234,7 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">时间侦探<span class="motto">——“平庸侦探破解发生的案件，而我，阻止案件的发生。”</span></div>
+  <div class="brand"><div class="name">时间侦探</div><div class="motto"><span>“平庸侦探破解发生的案件，</span><span>而我，阻止案件的发生。”</span></div></div>
   <nav id="tabs"></nav><span class="spacer"></span>
   <div id="runCount" class="num"></div>
 </header>

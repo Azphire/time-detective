@@ -8,8 +8,9 @@ const CASE_FILES = [
   'tutorial',   // 教学 · 生日蛋糕
   'will',       // 第一案 · 烧不掉的遗嘱
   'snow',       // 第二案 · 雪岭山庄
+  'train',      // 第三案 · 冬日列车
 ];
 
 const COMING_SOON = [
-  { tab:'第三案', title:'开发中' },
+  { tab:'第四案', title:'开发中' },
 ];
