@@ -313,16 +313,18 @@
 </div></div>
 
 
-<script src="engine.js"></script>
-<script src="cases/manifest.js"></script>
 <script>
-// 按清单依次加载案子文件，全部加载完再启动界面。某个文件加载失败就跳过它。
+// 加载顺序：清单 → 引擎 → 各个案子 → 界面。某个文件加载失败就跳过它。
+// 清单每次都重新拉取（很小），里面的 VERSION 一变，其他文件的地址就跟着变，浏览器会去下载新版本，不会用旧缓存。
 (function () {
-  const files = typeof CASE_FILES !== 'undefined' ? CASE_FILES : [];
-  let i = 0;
   const add = (src, cb) => { const el = document.createElement('script'); el.src = src; el.onload = cb; el.onerror = () => { console.warn('加载失败：' + src); cb(); }; document.body.appendChild(el); };
-  const next = () => i < files.length ? add('cases/' + files[i++] + '.js', next) : add('app.js', () => {});
-  next();
+  add('cases/manifest.js?t=' + Date.now(), () => {
+    const v = typeof VERSION !== 'undefined' ? '?v=' + encodeURIComponent(VERSION) : '';
+    const files = typeof CASE_FILES !== 'undefined' ? CASE_FILES : [];
+    let i = 0;
+    const next = () => i < files.length ? add('cases/' + files[i++] + '.js' + v, next) : add('app.js' + v, () => {});
+    add('engine.js' + v, next);
+  });
 })();
 </script>
 
