@@ -148,6 +148,7 @@ function renderLines() {
       if (anc.has(n)) tag = '已过去';
       if (n === start) cls += ' start';
       if (taken.has(n.id)) cls += ' taken';
+      if (tag.includes('–')) cls += ' range';        // 「22:00–04:00」这种长标签放到名字下面，免得把名字挤成竖排
       return `<button class="node ${cls}" data-id="${n.id}">
         <span class="dot"></span>
         <span class="st"><span class="st-l">${n.label}</span><br><span class="st-m">${n.room}${n.doesText ? ' · ' + n.doesText.replace(/了$/, '') : ''}</span>${tag ? `<span class="tag2 num">${n === start ? '▸ ' : ''}${tag}</span>` : ''}</span>
@@ -385,14 +386,13 @@ function newGame() {
   const cs = CS();
   state[ci] = freshState(cs);
   try { localStorage.removeItem(saveKey(cs)); } catch (e) {}
-  achState[ci] = { got:new Set(), fresh:new Set() };
-  saveAch(cs, achState[ci].got);
+  achState[ci].fresh = new Set();          // 成就保留，只去掉「新」标记
   $('#achToast').innerHTML = '';
   $('#newDlg').hidden = true;
   openCase(ci);
 }
 $('#newBtn').addEventListener('click', () => {
-  $('#newText').textContent = `「${CS().title}」的推演记录、已揭开的提示和已解锁的成就都会被清空，无法恢复。其他案子不受影响。`;
+  $('#newText').textContent = `「${CS().title}」的推演记录和已揭开的提示都会被清空，无法恢复。已解锁的成就会保留，其他案子不受影响。`;
   $('#newDlg').hidden = false;
 });
 $('#newNo').addEventListener('click', () => { $('#newDlg').hidden = true; });

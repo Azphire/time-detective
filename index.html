@@ -65,6 +65,7 @@
   .branch .node .tag2{ display:block; font-size:12px; color:var(--ink); }
   .branch .node.past .tag2, .branch .node.off .tag2{ color:var(--faint); }
   .node .tag{ font-size:12px; white-space:nowrap; padding-top:1px; }
+  .node.range .tag{ display:none; } .node.range .tag2{ display:block; font-size:12px; color:var(--ink); }
   .node.in .dot{ border-color:var(--ink); }
   .node.start .dot{ background:var(--ink); border-color:var(--ink); }
   .node.start .tag::before{ content:"▸ "; }
@@ -284,11 +285,11 @@
   </section>
 
   <section id="achSec">
-    <div class="sec-head"><h2>成就</h2><span id="achCount" class="hint-count num"></span></div>
+    <div class="sec-head"><h2>成就</h2><span id="achCount" class="hint-count num"></span><p>成就保存在浏览器本地，「新开局」不会清掉。清除浏览器的网站数据（Cookie 和网站数据）、换浏览器或用无痕模式时，成就不会保留。</p></div>
     <div class="ach" id="ach"></div>
   </section>
 
-  <div class="restart"><button id="newBtn">新开局</button><span>清空本案的推演记录、提示和成就，从头再来。其他案子不受影响。进度会自动保存在这个浏览器里。</span></div>
+  <div class="restart"><button id="newBtn">新开局</button><span>清空本案的推演记录和已揭开的提示，从头再来；已解锁的成就会保留。其他案子不受影响。进度会自动保存在这个浏览器里。</span></div>
 </main>
 
 <section id="soonView" hidden>
@@ -304,7 +305,7 @@
 <div id="achToast" aria-live="polite"></div>
 <div id="newDlg" hidden><div class="box">
   <h3>确定要新开局吗？</h3>
-  <p id="newText">本案的推演记录、已揭开的提示和已解锁的成就都会被清空，无法恢复。</p>
+  <p id="newText">本案的推演记录和已揭开的提示都会被清空，无法恢复。已解锁的成就会保留。</p>
   <div class="btns"><button id="newNo">取消</button><button class="go" id="newYes">确定新开局</button></div>
 </div></div>
 
