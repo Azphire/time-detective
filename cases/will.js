@@ -17,7 +17,7 @@ registerCase({
   chars:[
     { id:'lawyer', name:'律师', short:'律', fixed:true, start:'read', tree:[
       { id:'read', label:'宣读遗嘱', room:'大厅', awake:true,
-        does:w => { w.announced = true; }, doesText:'律师宣读了遗嘱' },
+        does:(w, t, pos) => { w.announced = true; if (pos.son.room === '大厅') w.sonHeard = true; }, doesText:'律师宣读了遗嘱' },
       { id:'guard', label:'守着遗嘱', room:'书房', awake:true },
     ]},
     { id:'keeper', name:'女管家', short:'管', start:'wash', tree:[
@@ -31,9 +31,10 @@ registerCase({
       { id:'bed', label:'就寝', room:'卧室', awake:false },
     ]},
     { id:'son', name:'长子', short:'长', start:'hunt', tree:[
+      { id:'game', label:'在厨房卸猎物', room:'厨房', awake:true },
       { id:'hunt', label:'打猎归来', room:'大厅', awake:true },
       { fork:[
-        { cond:'若遗嘱已宣读', test:w => w.announced, path:[
+        { cond:'若宣读遗嘱时他在大厅', test:w => w.sonHeard, path:[
           { id:'slam', label:'摔门回房', room:'卧室', awake:true },
           { id:'down', label:'半夜下楼', room:'大厅', awake:true },
         ]},
@@ -90,9 +91,9 @@ registerCase({
       when:c => c.w.will && c.at('son', 'down') && c.awakeIn('书房', 'son').length === 0,
       act:c => { c.sneak('son', '书房', '长子溜进书房，烧掉了遗嘱'); c.w.will = false; } },
     { id:'son-accident', who:'长子', bad:true,
-      truth:'长子喝醉后会四处游荡。书房里没人醒着时，他会晃进去找老爷的白兰地，打翻的酒和烛台把遗嘱烧着了。',
+      truth:'长子喝醉后会四处游荡。书房里没有大人醒着时（小女儿拦不住醉汉），他会晃进去找老爷的白兰地，打翻的酒和烛台把遗嘱烧着了。',
       clue:{ room:'书房', text:'书桌下有一只打翻的酒杯，地毯湿了一片。' },
-      when:c => c.w.will && c.at('son', 'roam') && c.awakeIn('书房', 'son').length === 0,
+      when:c => c.w.will && c.at('son', 'roam') && c.awakeIn('书房', 'son').filter(x => x !== 'girl').length === 0,
       act:c => { c.sneak('son', '书房', '醉醺醺的长子晃进书房，打翻了酒杯'); c.w.will = false; } },
   ],
   hints:[
