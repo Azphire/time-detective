@@ -46,7 +46,7 @@
   /* tutorial */
 
   /* 明线：横向角色，纵向时间点，分叉的分支左右并排 */
-  .lines{ display:flex; overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
+  .lines{ display:flex; width:fit-content; max-width:100%; overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
   .line{ border-right:1px solid var(--line); padding:16px 18px 14px; }
   .line:last-child{ border-right:0; }
   .line-head{ display:flex; align-items:center; gap:8px; margin-bottom:14px; white-space:nowrap; }
@@ -59,6 +59,11 @@
   .node .st{ flex:1; min-width:0; }
   .st-l{ font-weight:500; }
   .st-m{ font-size:12px; color:var(--muted); }
+  /* 分支里的列较窄：钟点写在房间下面，不占右侧位置 */
+  .node .tag2{ display:none; }
+  .branch .node .tag{ display:none; }
+  .branch .node .tag2{ display:block; font-size:12px; color:var(--ink); }
+  .branch .node.past .tag2, .branch .node.off .tag2{ color:var(--faint); }
   .node .tag{ font-size:12px; white-space:nowrap; padding-top:1px; }
   .node.in .dot{ border-color:var(--ink); }
   .node.start .dot{ background:var(--ink); border-color:var(--ink); }
@@ -93,15 +98,15 @@
   .res-tools[hidden]{ display:none; }
   .res-tools button{ font-size:12px; padding:3px 10px; }
   .res-tools button.on{ background:var(--ink); color:var(--paper); }
-  .grid-wrap{ overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
+  .grid-wrap{ width:fit-content; max-width:100%; overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
   #resultSec.stale .grid-wrap, #resultSec.stale .verdict, #resultSec.stale .traces{ opacity:.38; }
-  table.grid{ border-collapse:collapse; width:100%; min-width:720px; }
+  table.grid{ border-collapse:collapse; width:auto; }
   .grid th, .grid td{ border-bottom:1px solid var(--line); border-right:1px solid var(--line); vertical-align:top; text-align:left; }
   .grid tr > *:last-child{ border-right:0; }
   .grid tbody tr:last-child > *{ border-bottom:0; }
   .grid thead th{ font-weight:600; font-size:13px; padding:10px 12px; letter-spacing:.08em; }
   .grid tbody th{ font-weight:500; padding:12px; width:76px; }
-  .grid td{ padding:10px 12px; min-width:140px; height:64px; }
+  .grid td{ padding:10px 12px; width:220px; min-width:150px; height:64px; }
   .grid tbody tr{ animation:rowin .35s ease-out both; }
   @keyframes rowin{ from{ opacity:0; transform:translateY(-4px);} }
   .grid tr.cut th, .grid tr.cut td{ color:var(--faint); height:44px; }

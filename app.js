@@ -148,7 +148,7 @@ function renderLines() {
       if (taken.has(n.id)) cls += ' taken';
       return `<button class="node ${cls}" data-id="${n.id}">
         <span class="dot"></span>
-        <span class="st"><span class="st-l">${n.label}</span><br><span class="st-m">${n.room}${n.doesText ? ' · ' + n.doesText.replace(/了$/, '') : ''}</span></span>
+        <span class="st"><span class="st-l">${n.label}</span><br><span class="st-m">${n.room}${n.doesText ? ' · ' + n.doesText.replace(/了$/, '') : ''}</span>${tag ? `<span class="tag2 num">${n === start ? '▸ ' : ''}${tag}</span>` : ''}</span>
         <span class="tag num">${tag}</span></button>`;
     };
     const known = b => s.solved || b.path.some(n => s.revealed.has(n.id));
@@ -166,7 +166,9 @@ function renderLines() {
     };
     const col = document.createElement('div');
     col.className = 'line' + (ch.fixed ? ' fixed' : '');
-    col.style.flex = `1 0 ${Math.max(ch.fixed ? 188 : 158, visW(ch.tree) + 36)}px`;
+    const w = Math.max(ch.fixed ? 220 : 200, visW(ch.tree) + 36);   // 理想列宽：按内容，不铺满
+    col.style.flex = `0 1 ${w}px`;
+    col.style.minWidth = Math.round(Math.max(158, w * 0.8)) + 'px';  // 人多时先压缩到这里，再横向滚动
     col.innerHTML = `<div class="line-head"><span class="tok">${ch.short}</span><b>${ch.name}</b>${ch.fixed ? '<em>无法调整</em>' : ''}</div>${pathHTML(ch.tree)}`;
     if (!ch.fixed) col.querySelectorAll('.node').forEach(b => b.onclick = () => setStart(ch.id, b.dataset.id));
     box.appendChild(col);
