@@ -42,12 +42,20 @@ function simulate(cs, starts) {
   const cur = {};
   cs.hours.forEach((hour, t) => {
     if (out.badAt != null) { out.hours.push({ hour, cut:true }); return; }   // 案发后这一夜就停在那里
+    // exitOnDeath：死了的人退出（不再前进、不在任何房间、不算醒着）。只有开了这个选项的案子才这样处理
+    const gone = id => !!(cs.exitOnDeath && w.dead && w.dead[id]);
     cs.chars.forEach(ch => {
+      if (t > 0 && gone(ch.id)) return;
       cur[ch.id] = t === 0 ? ch.nodes[starts[ch.id]] : advance(cur[ch.id], w);
     });
     const pos = {}, real = {};
     cs.chars.forEach(ch => {
       const n = cur[ch.id];
+      if (gone(ch.id)) {
+        pos[ch.id] = { room:null, awake:false, label:'', node:n.id, dead:true };
+        real[ch.id] = { room:null, awake:false, dead:true };
+        return;
+      }
       pos[ch.id] = { room:n.room, awake:n.awake, label:n.label, node:n.id };
       real[ch.id] = { room:n.room, awake:n.awake };
     });
@@ -57,9 +65,9 @@ function simulate(cs, starts) {
       name:id => cs.chars.find(x => x.id === id).name,
       at:(id, nodeId) => pos[id].node === nodeId,
       atAny:(id, ids) => ids.includes(pos[id].node),
-      awake:id => real[id].awake,
+      awake:id => real[id].awake && !gone(id),
       room:id => real[id].room,
-      awakeIn:(room, except) => cs.chars.filter(ch => ch.id !== except && real[ch.id].room === room && real[ch.id].awake).map(ch => ch.id),
+      awakeIn:(room, except) => cs.chars.filter(ch => ch.id !== except && real[ch.id].room === room && real[ch.id].awake && !gone(ch.id)).map(ch => ch.id),
       see:(room, text, bad) => events.push({ room, text, bad:!!bad }),
       doze:(id, text) => { real[id].awake = false; hidden.push({ room:real[id].room, text, who:id }); },
       wake:(id, text) => { real[id].awake = true; if (text) hidden.push({ room:real[id].room, text, who:id }); },
@@ -73,6 +81,7 @@ function simulate(cs, starts) {
     // 明面上的动作
     cs.chars.forEach(ch => {
       const n = cur[ch.id];
+      if (gone(ch.id)) return;
       if (n.does) {
         const r = n.does(w, t, pos);
         if (r && typeof r === 'object') {            // { text, label }：这个钟点的动作和明线写的不一样
@@ -103,7 +112,7 @@ function simulate(cs, starts) {
     // 证词：偷偷离开时，原房间里醒着的人会注意到
     sneaks.forEach(s => {
       if (w.dark) return;            // 停电时谁也看不清
-      const wit = cs.chars.filter(ch => ch.id !== s.id && real[ch.id].room === s.from && real[ch.id].awake);
+      const wit = cs.chars.filter(ch => ch.id !== s.id && real[ch.id].room === s.from && real[ch.id].awake && !gone(ch.id));
       if (wit.length) {
         const nm = cs.chars.find(x => x.id === s.id).name;
         const tx = `${wit.map(x => x.name).join('、')}说：${nm}有一阵子不在${s.from}`;
