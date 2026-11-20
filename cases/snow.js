@@ -20,6 +20,10 @@ registerCase({
       test:x => x.r.hours.some(h => !h.cut && h.events.some(e => e.text.includes('阿梅没法铺床'))) },
     { id:'power', name:'村里通电了', desc:'第一次让发电机撑过了午夜。',
       test:x => x.r.hours.some(h => h.hour === '00:00' && !h.cut) && !x.fired.has('power') },
+    { id:'hypno', name:'催眠大师', desc:'明线上能休息的人，都让他们从休息开始。',
+      // 明线里有「回房休息 / 回房睡觉 / 睡下 / 回房」的人，起点都选在这些格子上
+      test:x => Object.entries({ zhou:['zbed'], mei:['mbed'], lin:['lbed1', 'lbed2'], xu:['xroom'], jie:['jroom'] })
+        .every(([id, ids]) => ids.includes(x.s.starts[id])) },
     { id:'allways', name:'死法大全', desc:'解锁沈先生的四种死法。', test:x => ['shen-insom', 'shen-poison', 'jie-rage', 'jie-kill'].every(id => x.s.fired[id]) },
     { id:'paths', name:'岔路尽头', desc:'在推演中走遍每一条岔路。', test:x => x.cs.chars.every(ch => ch.order.every(n => x.s.revealed.has(n.id))) },
     { id:'forgot', name:'哦对，忘了说了', desc:'推演了 10 次，第一条提示自动揭开了。', test:x => x.s.runs.length >= 10 },

@@ -45,6 +45,10 @@
       { id:'dark', name:'隧道尽头', desc:'有人在漆黑的隧道里遇害。', test:x => x.r.badAt === '02:00' },
       { id:'none', name:'无人生还', desc:'贺老板、苏小姐和乘警老陆都在推演里遇过害。',
         test:x => x.s.fired['tang-kill'] && (x.s.fired['he-kill'] || x.s.fired['zhao-su']) && x.s.fired['zhao-cop'] },
+      { id:'berth', name:'高质量卧铺', desc:'明线上能休息的人，都让他们从休息开始。',
+        // 明线里有「睡下 / 吃药睡下 / 打盹」的人，起点都选在这些格子上
+        test:x => Object.entries({ he:['hsleep'], wife:['wpill'], su:['ssleep1', 'ssleep2'], tang:['tnap'], zhao:['zsleep'], fu:['fnap1', 'fnap2'] })
+          .every(([id, ids]) => ids.includes(x.s.starts[id])) },
       { id:'paths', name:'全线贯通', desc:'在推演中走遍每一条岔路。', test:x => x.cs.chars.every(ch => ch.order.every(n => x.s.revealed.has(n.id))) },
       { id:'forgot', name:'各位旅客请注意', desc:'推演了 10 次，第一条提示自动揭开了。', test:x => x.s.runs.length >= 10 },
       { id:'hundred', name:'这是列车还是房车？', desc:'推演了 100 次。', test:x => x.s.runs.length >= 100 },
