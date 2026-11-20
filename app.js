@@ -3,7 +3,7 @@
    界面
    ========================================================= */
 const $ = q => document.querySelector(q);
-const state = CASES.map(cs => freshState(cs));
+const state = CASES.map(cs => restoreState(cs));   // 先从浏览器里恢复上次的进度
 let ci = 0;
 const CS = () => CASES[ci], ST = () => state[ci];
 const cfgText = (cs, st) => cs.chars.filter(c => !c.fixed).map(c => `${c.name}·${c.nodes[st[c.id]].label}`).join('　');
@@ -75,6 +75,7 @@ function renderTabs() {
 }
 function openSoon(k) {
   soon = k;
+  saveCurrent();
   $('main').hidden = true;
   $('#soonView').hidden = false;
   $('#soonTab').textContent = COMING[k].tab;
@@ -85,6 +86,7 @@ function openSoon(k) {
 function openCase(i) {
   ci = i;
   soon = -1;
+  saveCurrent();
   $('main').hidden = false;
   $('#soonView').hidden = true;
   const cs = CS(), s = ST();
@@ -182,6 +184,7 @@ function setStart(id, nodeId) {
   if (s.starts[id] !== nodeId) s.starts[id] = nodeId;
   renderLines(); markStale();
   renderGuide();
+  saveState();
 }
 function markStale() {
   const s = ST();
@@ -208,6 +211,7 @@ function run() {
   renderGuide();
   renderRuns(); renderTabs();
   if (s.solved) renderTruth();
+  saveState();
   $('#resultSec').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -257,7 +261,7 @@ function showResult(i, fresh) {
   $('#traces').innerHTML = `<span class="lbl">痕迹与证词</span>${tr.length ? tr.join('　') : '没有发现异常'}`;
   renderRuns(); renderLines();
 }
-function setView(real) { ST().real = real; showResult(ST().shown, false); }
+function setView(real) { ST().real = real; showResult(ST().shown, false); saveState(); }
 
 function renderHints() {
   const cs = CS(), s = ST(), list = cs.hints || [];
@@ -273,7 +277,7 @@ function renderHints() {
 }
 function revealHint() {
   const s = ST();
-  if (s.hintsOpen < (CS().hints || []).length) { s.hintsOpen++; renderHints(); }
+  if (s.hintsOpen < (CS().hints || []).length) { s.hintsOpen++; renderHints(); saveState(); }
 }
 function renderRuns() {
   const ol = $('#runs'), cs = CS(), s = ST();
@@ -294,6 +298,7 @@ function renderRuns() {
     const i = +li.dataset.i;
     ST().starts = { ...ST().runs[i].starts };
     showResult(i, false);
+    saveState();
     $('#resultSec').scrollIntoView({ behavior:'smooth', block:'start' });
   });
 }
@@ -329,6 +334,46 @@ function renderTruth() {
   $('#resTools').hidden = false;
 }
 
+/* ---------- 进度保存（只存在这个浏览器里） ----------
+   每个案子只保存「每次推演用的起点安排」，加载时按当前规则重新推演一遍，
+   所以案子更新后旧记录也会按新规则显示；对不上新版本的记录会被丢掉。 */
+function saveKey(cs) { return 'timedet-save-' + cs.id; }   // 函数声明：页面一加载就要用到
+var SAVE_CUR = 'timedet-current';
+function saveState(i = ci) {
+  const cs = CASES[i], s = state[i];
+  try {
+    localStorage.setItem(saveKey(cs), JSON.stringify({
+      v:1, starts:s.starts, runs:s.runs.map(x => x.starts), shown:s.shown,
+      real:s.real, hintsOpen:s.hintsOpen, touched:s.touched,
+    }));
+  } catch (e) {}
+}
+function saveCurrent() {
+  try { localStorage.setItem(SAVE_CUR, soon >= 0 ? 'soon:' + soon : CASES[ci].id); } catch (e) {}
+}
+function validStarts(cs, st) {
+  return !!st && cs.chars.every(c => typeof st[c.id] === 'string' && c.nodes[st[c.id]] && (!c.fixed || st[c.id] === c.start));
+}
+function restoreState(cs) {
+  const s = freshState(cs);
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(saveKey(cs)) || 'null'); } catch (e) {}
+  if (!d) return s;
+  (d.runs || []).filter(st => validStarts(cs, st)).forEach(st => {
+    const r = simulate(cs, { ...st });
+    s.runs.push({ starts:{ ...st }, r });
+    r.hours.forEach(h => { if (!h.cut) Object.values(h.pos).forEach(p => s.revealed.add(p.node)); });
+    new Set(r.truth.map(x => x.rule)).forEach(id => s.fired[id] = (s.fired[id] || 0) + 1);
+    if (r.end.ok) s.solved = true;
+  });
+  if (validStarts(cs, d.starts)) { s.starts = { ...d.starts }; Object.values(s.starts).forEach(id => s.revealed.add(id)); }
+  s.shown = Number.isInteger(d.shown) && d.shown >= 0 && d.shown < s.runs.length ? d.shown : s.runs.length - 1;
+  s.real = !!d.real && s.solved;
+  s.hintsOpen = Math.max(0, Math.min(d.hintsOpen | 0, (cs.hints || []).length));
+  s.touched = d.touched && typeof d.touched === 'object' ? d.touched : {};
+  return s;
+}
+
 function freshState(cs) {
   return {
     starts:Object.fromEntries(cs.chars.map(c => [c.id, c.start])),
@@ -339,6 +384,7 @@ function freshState(cs) {
 function newGame() {
   const cs = CS();
   state[ci] = freshState(cs);
+  try { localStorage.removeItem(saveKey(cs)); } catch (e) {}
   achState[ci] = { got:new Set(), fresh:new Set() };
   saveAch(cs, achState[ci].got);
   $('#achToast').innerHTML = '';
@@ -356,4 +402,13 @@ $('#runBtn').addEventListener('click', run);
 $('#hintBtn').addEventListener('click', revealHint);
 $('#vMing').addEventListener('click', () => setView(false));
 $('#vReal').addEventListener('click', () => setView(true));
-openCase(0);
+
+// 打开上次停留的案子（或「开发中」页面）
+(function () {
+  let cur = '';
+  try { cur = localStorage.getItem(SAVE_CUR) || ''; } catch (e) {}
+  const idx = CASES.findIndex(c => c.id === cur);
+  openCase(idx >= 0 ? idx : 0);
+  const m = cur.match(/^soon:(\d+)$/);
+  if (m && COMING[+m[1]]) openSoon(+m[1]);
+})();
