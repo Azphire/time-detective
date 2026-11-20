@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Azphire">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>时间侦探——“平庸侦探破解发生的案件，而我，阻止案件的发生。”</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --paper:#ffffff; --ink:#1a1a1a; --muted:#8b8a84; --faint:#c9c7bf; --line:#dddbd3;
+    --bad:#b3261e; --ok:#1f6b45;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--bg); color:var(--ink); }
+  body{ font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif; font-size:14px; line-height:1.6; }
+  button{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+  .num{ font-variant-numeric:tabular-nums; }
+
+  /* top */
+  .top{ display:flex; align-items:center; gap:28px; padding:0 32px; border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:10; flex-wrap:wrap; }
+  .brand .motto{ font-weight:400; letter-spacing:.02em; color:var(--muted); margin-left:2px; }
+  .brand{ font-weight:600; letter-spacing:.12em; padding:14px 0; }
+  #tabs{ display:flex; gap:24px; flex:1; }
+  #tabs[hidden]{ display:none; }
+  .top .spacer{ flex:1; }
+  .tab{ padding:14px 0 13px; border-bottom:2px solid transparent; color:var(--muted); white-space:nowrap; font-size:13px; }
+  .tab:hover{ color:var(--ink); }
+  .tab.cur{ color:var(--ink); border-bottom-color:var(--ink); font-weight:600; }
+  .tab .ck{ color:var(--ok); margin-left:4px; }
+  #runCount{ font-size:13px; color:var(--muted); }
+
+  main{ max-width:1640px; margin:0 auto; padding:40px 32px 80px; }
+  section{ margin-bottom:44px; }
+  .eyebrow{ font-size:12px; letter-spacing:.24em; color:var(--muted); }
+  h1{ font-size:30px; font-weight:600; margin:6px 0 10px; letter-spacing:.02em; }
+  h2{ font-size:15px; font-weight:600; margin:0; letter-spacing:.08em; }
+  #brief{ margin:0 0 10px; color:#3d3c38; }
+  #note{ margin:0 0 14px; font-size:13px; color:#3d3c38; border-left:2px solid var(--ink); padding:2px 0 2px 10px; }
+  #note[hidden]{ display:none; }
+  #note b{ font-weight:600; margin-right:6px; }
+  .goal{ font-size:13px; color:var(--muted); }
+  .goal b{ color:var(--ink); font-weight:600; margin-left:8px; }
+  .sec-head{ display:flex; align-items:baseline; gap:16px; margin-bottom:16px; flex-wrap:wrap; border-bottom:1px solid var(--ink); padding-bottom:8px; }
+  .sec-head p{ margin:0; color:var(--muted); font-size:13px; }
+
+  /* tutorial */
+
+  /* 明线：横向角色，纵向时间点，分叉的分支左右并排 */
+  .lines{ display:flex; overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
+  .line{ border-right:1px solid var(--line); padding:16px 18px 14px; }
+  .line:last-child{ border-right:0; }
+  .line-head{ display:flex; align-items:center; gap:8px; margin-bottom:14px; white-space:nowrap; }
+  .line-head b{ font-weight:600; }
+  .line-head em{ font-style:normal; font-size:12px; color:var(--muted); margin-left:auto; }
+  .path{ border-left:1px solid var(--line); margin-left:5px; }
+  .node{ position:relative; display:flex; align-items:flex-start; gap:10px; padding:4px 0 12px 0; margin-left:-6px; cursor:pointer; width:calc(100% + 6px); text-align:left; }
+  .line.fixed .node{ cursor:default; }
+  .node .dot{ width:11px; height:11px; margin-top:6px; border-radius:50%; border:1px solid var(--faint); background:var(--paper); flex:none; }
+  .node .st{ flex:1; min-width:0; }
+  .st-l{ font-weight:500; }
+  .st-m{ font-size:12px; color:var(--muted); }
+  .node .tag{ font-size:12px; white-space:nowrap; padding-top:1px; }
+  .node.in .dot{ border-color:var(--ink); }
+  .node.start .dot{ background:var(--ink); border-color:var(--ink); }
+  .node.start .tag::before{ content:"▸ "; }
+  .node.taken .st-l{ text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:4px; }
+  .node.taken .dot{ background:var(--ink); border-color:var(--ink); }
+  .node.past .st-l, .node.past .st-m, .node.past .tag,
+  .node.off .st-l, .node.off .st-m, .node.off .tag,
+  .node.out .st-l, .node.out .st-m{ color:var(--faint); }
+  .line:not(.fixed) .node:not(.start):hover .st-l{ text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+  .fork{ display:flex; gap:14px; margin-left:-1px; padding-top:2px; }
+  .branch{ flex:1; min-width:124px; }
+  .branch.unknown{ flex:0 0 46px; min-width:46px; }
+  .branch .q{ color:var(--faint); font-size:15px; padding:4px 0 0 12px; }
+  .branch .cond{ font-size:11px; letter-spacing:.06em; color:var(--muted); border-top:1px solid var(--ink); padding:4px 0 6px 0; margin-left:5px; white-space:nowrap; }
+  .branch.live .cond{ color:var(--ink); font-weight:600; }
+  .scene-strip{ display:flex; flex-wrap:wrap; gap:6px 22px; padding:10px 0 0; font-size:13px; color:#3d3c38; }
+  .scene-strip b{ font-weight:600; color:var(--ink); }
+
+  .tok{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; font-size:12px; line-height:1; flex:none;
+        background:var(--ink); color:var(--paper); border:1px solid var(--ink); }
+  .tok.sleep{ background:var(--paper); color:var(--muted); border-color:var(--faint); }
+  .tok.sneak{ background:var(--paper); color:var(--bad); border:1px dashed var(--bad); }
+
+  .run-bar{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  #runBtn{ background:var(--ink); color:var(--paper); padding:11px 22px; font-weight:600; letter-spacing:.06em; }
+  #runBtn:hover{ background:#000; }
+  .run-bar .hint{ color:var(--muted); font-size:13px; max-width:640px; }
+
+  /* 推演网格：横向房间，纵向钟点 */
+  .res-tools{ margin-left:auto; display:flex; gap:0; border:1px solid var(--ink); }
+  .res-tools[hidden]{ display:none; }
+  .res-tools button{ font-size:12px; padding:3px 10px; }
+  .res-tools button.on{ background:var(--ink); color:var(--paper); }
+  .grid-wrap{ overflow-x:auto; border:1px solid var(--line); background:var(--paper); }
+  #resultSec.stale .grid-wrap, #resultSec.stale .verdict, #resultSec.stale .traces{ opacity:.38; }
+  table.grid{ border-collapse:collapse; width:100%; min-width:720px; }
+  .grid th, .grid td{ border-bottom:1px solid var(--line); border-right:1px solid var(--line); vertical-align:top; text-align:left; }
+  .grid tr > *:last-child{ border-right:0; }
+  .grid tbody tr:last-child > *{ border-bottom:0; }
+  .grid thead th{ font-weight:600; font-size:13px; padding:10px 12px; letter-spacing:.08em; }
+  .grid tbody th{ font-weight:500; padding:12px; width:76px; }
+  .grid td{ padding:10px 12px; min-width:140px; height:64px; }
+  .grid tbody tr{ animation:rowin .35s ease-out both; }
+  @keyframes rowin{ from{ opacity:0; transform:translateY(-4px);} }
+  .grid tr.cut th, .grid tr.cut td{ color:var(--faint); height:44px; }
+  .who{ display:flex; align-items:center; gap:7px; font-size:13px; margin-bottom:5px; }
+  .who.sleep{ color:var(--muted); }
+  .who.gone{ color:var(--faint); }
+  .who.gone .tok{ background:var(--paper); color:var(--faint); border:1px dashed var(--faint); }
+  .who.sneak{ color:var(--bad); }
+  .item{ display:inline-block; font-size:12px; border:1px solid var(--ink); padding:0 6px; margin:2px 4px 4px 0; }
+  .item.bad{ border-color:var(--bad); color:var(--bad); }
+  .ev{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .ev::before{ content:"— "; }
+  .ev.bad{ color:var(--bad); font-weight:600; }
+  .ev.wit{ color:var(--ink); }
+  .ev.hid{ color:var(--bad); font-style:italic; }
+  .verdict{ margin-top:16px; font-size:16px; font-weight:600; }
+  .verdict.ok{ color:var(--ok); }
+  .verdict.bad{ color:var(--bad); }
+  .traces{ margin-top:8px; font-size:13px; color:#3d3c38; }
+  .traces .lbl{ color:var(--muted); margin-right:8px; }
+
+  #truthSec{ border:1px solid var(--ink); background:var(--paper); padding:22px 24px; }
+  #truthSec[hidden]{ display:none; }
+  #truthSec .lead{ color:var(--muted); font-size:13px; margin:6px 0 14px; }
+  .truth{ list-style:none; padding:0; margin:0 0 20px; }
+  .truth li{ display:grid; grid-template-columns:100px 1fr auto; gap:14px; padding:10px 0; border-top:1px solid var(--line); }
+  .truth .w{ font-weight:600; }
+  .truth .s{ font-size:12px; color:var(--muted); white-space:nowrap; }
+  .truth .s.hit{ color:var(--ink); }
+  .next{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .next button{ background:var(--ink); color:var(--paper); padding:10px 20px; font-weight:600; }
+  .next span{ font-size:13px; color:var(--muted); }
+
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:40px; }
+  .two ul, .two ol{ list-style:none; padding:0; margin:0; }
+  #clues li{ padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; display:grid; grid-template-columns:56px 44px 1fr; gap:8px; }
+  #clues .n, #clues .r, #runs .n{ color:var(--muted); }
+  .empty, #clues li.empty, #runs li.empty{ display:block; color:var(--faint); font-size:13px; padding:9px 0; cursor:default; }
+  #runs li{ padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; display:grid; grid-template-columns:44px 1fr auto; column-gap:12px; row-gap:4px; cursor:pointer; }
+  #runs li:hover .cfg{ text-decoration:underline; text-underline-offset:3px; }
+  #runs li.shown .cfg, #runs li.shown .n{ font-weight:600; color:var(--ink); }
+  #runs .cl{ grid-column:2 / 4; display:grid; grid-template-columns:52px 1fr; gap:8px; color:#3d3c38; }
+  #runs .cl .k{ color:var(--muted); }
+  #runs .cl .nw{ font-size:11px; border:1px solid var(--ink); padding:0 4px; margin-left:6px; color:var(--ink); }
+  #runs .cl.none{ color:var(--faint); }
+  #runs .res{ white-space:nowrap; }
+  #runs .res.bad{ color:var(--bad); }
+  #runs .res.ok{ color:var(--ok); }
+  #hintSec[hidden]{ display:none; }
+  #guide[hidden]{ display:none; }
+  main[hidden]{ display:none; }
+  .credit{ max-width:1640px; margin:0 auto; padding:0 32px 40px; font-size:12px; color:var(--faint); letter-spacing:.06em; }
+  #soonView[hidden]{ display:none; }
+  #soonView{ max-width:1640px; margin:0 auto; padding:40px 32px 80px; }
+  .soon-box{ border:1px dashed var(--faint); padding:72px 24px; text-align:center; }
+  .soon-tab{ font-size:13px; color:var(--muted); letter-spacing:.2em; }
+  .soon-box h1{ margin:8px 0 10px; color:var(--muted); }
+  .soon-box p{ margin:0; color:var(--faint); font-size:14px; }
+  .tab.soon{ color:var(--faint); }
+  .tab.soon.cur{ color:var(--muted); border-bottom-color:var(--faint); }
+  #guideList{ list-style:none; margin:0; padding:0; counter-reset:g; }
+  #guideList li{ counter-increment:g; display:grid; grid-template-columns:32px 1fr; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; line-height:1.7; color:var(--muted); }
+  #guideList li::before{ content:counter(g); font-variant-numeric:tabular-nums; color:var(--faint); }
+  #guideList li.done{ color:var(--faint); }
+  #guideList li.done::before{ content:"✓"; color:var(--ok); }
+  #guideList li.now{ color:var(--ink); }
+  #guideList li.now::before{ color:var(--ink); font-weight:700; }
+  .hint-count{ font-size:13px; color:var(--muted); }
+  .hint-btn{ margin-left:auto; font-size:13px; border:1px solid var(--ink); padding:3px 12px; }
+  .hint-btn:hover{ background:var(--ink); color:var(--paper); }
+  .hint-btn:disabled{ border-color:var(--line); color:var(--faint); cursor:default; background:none; }
+  #hints{ list-style:none; margin:0; padding:0; counter-reset:h; }
+  #hints li{ counter-increment:h; display:grid; grid-template-columns:32px 1fr; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; color:#3d3c38; animation:rowin .35s ease-out both; }
+  #hints li::before{ content:counter(h); color:var(--muted); font-variant-numeric:tabular-nums; }
+  #hints .none{ display:block; color:var(--faint); }
+  #hints .none::before{ content:none; }
+  #achSec[hidden]{ display:none; }
+  .ach{ display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; }
+  .ach .a{ border:1px solid var(--line); background:var(--paper); padding:10px 12px; }
+  .ach .a b{ display:block; font-size:14px; }
+  .ach .a span{ font-size:12px; color:var(--muted); }
+  .ach .a.lock{ background:transparent; border-style:dashed; }
+  .ach .a.lock b{ color:var(--faint); font-weight:500; }
+  .ach .a.lock span{ color:var(--faint); }
+  .ach .a.new{ border-color:var(--ink); }
+  .ach .a.lock.open b{ color:var(--muted); }
+  .ach .a.lock.open span{ color:var(--faint); }
+  .restart{ margin-top:36px; padding-top:20px; border-top:1px solid var(--line); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .restart button{ border:1px solid var(--ink); padding:7px 16px; font-size:13px; }
+  .restart button:hover{ background:var(--ink); color:var(--paper); }
+  .restart span{ font-size:12px; color:var(--faint); }
+  #newDlg{ position:fixed; inset:0; background:rgba(246,245,241,.9); display:grid; place-items:center; z-index:70; padding:20px; }
+  #newDlg[hidden]{ display:none; }
+  #newDlg .box{ background:var(--paper); border:1px solid var(--ink); padding:24px; width:min(420px,100%); }
+  #newDlg h3{ margin:0 0 8px; font-size:17px; }
+  #newDlg p{ margin:0 0 20px; color:#3d3c38; font-size:14px; }
+  #newDlg .btns{ display:flex; justify-content:flex-end; gap:10px; }
+  #newDlg .btns button{ border:1px solid var(--ink); padding:8px 16px; }
+  #newDlg .btns .go{ background:var(--ink); color:var(--paper); }
+  #achToast{ position:fixed; right:24px; bottom:24px; z-index:60; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  #achToast .t{ background:var(--ink); color:var(--paper); padding:12px 16px; min-width:240px; max-width:320px; animation:toastin .3s ease-out both; }
+  #achToast .t small{ display:block; font-size:11px; letter-spacing:.2em; color:#a9a7a0; }
+  #achToast .t b{ display:block; font-size:16px; margin:2px 0; }
+  #achToast .t span{ font-size:12px; color:#d6d4cd; }
+  #achToast .t.out{ animation:toastout .3s ease-in both; }
+  @keyframes toastin{ from{ opacity:0; transform:translateY(8px);} }
+  @keyframes toastout{ to{ opacity:0; transform:translateY(8px);} }
+  .rules{ margin:28px 0 0; padding:0; list-style:none; font-size:13px; color:#3d3c38; }
+  .rules li{ padding:4px 0; }
+  .rules li::before{ content:"·"; margin-right:8px; color:var(--muted); }
+
+  @media (max-width:760px){
+    .top{ padding:0 18px; gap:14px; } main{ padding:28px 18px 60px; }
+    #tabs{ order:3; flex-basis:100%; gap:18px; overflow-x:auto; }
+    .brand .motto{ display:none; }
+    .top .spacer{ display:none; }
+    .two{ grid-template-columns:1fr; }
+    .truth li{ grid-template-columns:1fr; gap:2px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">时间侦探<span class="motto">——“平庸侦探破解发生的案件，而我，阻止案件的发生。”</span></div>
+  <nav id="tabs"></nav><span class="spacer"></span>
+  <div id="runCount" class="num"></div>
+</header>
+
+<main>
+  <section>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="title"></h1>
+    <p id="brief"></p>
+    <p id="note" hidden></p>
+    <div class="goal">目标<b id="goal"></b></div>
+  </section>
+
+  <section id="guide" hidden>
+    <div class="sec-head"><h2>玩法教学</h2><span id="guideCount" class="hint-count num"></span></div>
+    <ol id="guideList"></ol>
+  </section>
+
+
+  <section>
+    <div class="sec-head"><h2>明线</h2></div>
+    <div class="lines" id="lines"></div>
+    <div class="scene-strip" id="scene"></div>
+  </section>
+
+  <section class="run-bar">
+    <button id="runBtn">推演这一夜</button>
+  </section>
+
+  <section id="resultSec" hidden>
+    <div class="sec-head">
+      <h2 id="resTitle">推演结果</h2><p id="resSub"></p>
+      <div class="res-tools" id="resTools" hidden><button id="vMing" class="on">明线</button><button id="vReal">真实经过</button></div>
+    </div>
+    <div class="grid-wrap"><table class="grid" id="grid"></table></div>
+    <div class="verdict" id="verdict"></div>
+    <div class="traces" id="traces"></div>
+  </section>
+
+  <section id="truthSec" hidden></section>
+
+  <section id="hintSec">
+    <div class="sec-head"><h2>提示</h2><span id="hintCount" class="hint-count num"></span>
+      <button id="hintBtn" class="hint-btn">揭开一条提示</button></div>
+    <ol id="hints"></ol>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>推演记录</h2></div>
+    <ol id="runs"></ol>
+  </section>
+
+  <section id="achSec">
+    <div class="sec-head"><h2>成就</h2><span id="achCount" class="hint-count num"></span></div>
+    <div class="ach" id="ach"></div>
+  </section>
+
+  <div class="restart"><button id="newBtn">新开局</button><span>清空本案的推演记录、提示和成就，从头再来。其他案子不受影响。</span></div>
+</main>
+
+<section id="soonView" hidden>
+  <div class="soon-box">
+    <div class="soon-tab" id="soonTab"></div>
+    <h1>开发中</h1>
+    <p>新的案子还在编写，敬请期待。</p>
+  </div>
+</section>
+
+<footer class="credit">时间侦探 · 制作者：Azphire</footer>
+
+<div id="achToast" aria-live="polite"></div>
+<div id="newDlg" hidden><div class="box">
+  <h3>确定要新开局吗？</h3>
+  <p id="newText">本案的推演记录、已揭开的提示和已解锁的成就都会被清空，无法恢复。</p>
+  <div class="btns"><button id="newNo">取消</button><button class="go" id="newYes">确定新开局</button></div>
+</div></div>
+
+
+<script>
+/* =========================================================
+   时间侦探 · 推演引擎
+   ---------------------------------------------------------
+   明线（tree）：每个人的一串时间点，可以分叉。
+     · 节点 { id, label, room, awake, does?, doesText? }
+       does(w) 是明面上的动作（大家都看得见），比如锁门。
+     · 分叉 { fork:[ { cond:'若…', test:w=>bool, path:[...] }, ..., { cond:'否则', path:[...] } ] }
+       走到分叉时，按「上一个钟点结束时」的世界状态选路——也就是别人在前面做过的事。
+       cond 只用于破案后的揭晓；推演中玩家看不到分叉条件，没走过的分支也不显示。
+     · 走到末尾就停在最后一个节点（不一定睡着，可能正醒着等机会）。
+   暗线（rules）：每个钟点按顺序检查，条件满足就发生，玩家看不见。
+     · c.sneak(人, 房间)：偷偷离开明线上的位置。推演表仍显示明线位置；
+       如果原房间里有别人醒着，他们会注意到这个人不见了（证词）。
+   ========================================================= */
+
+function prepTree(ch) {
+  ch.nodes = {}; ch.order = [];
+  const walk = (arr, depth, conds) => {
+    arr.forEach((el, i) => {
+      if (el.fork) {
+        el.fork.forEach(b => walk(b.path, depth + i, conds.concat([b.cond])));
+        return;
+      }
+      el.depth = depth + i; el.conds = conds;
+      const nx = arr[i + 1];
+      el.next = nx ? (nx.fork ? { fork:nx.fork } : { node:nx }) : null;
+      ch.nodes[el.id] = el; ch.order.push(el);
+    });
+  };
+  walk(ch.tree, 0, []);
+}
+function advance(node, w) {
+  if (!node.next) return node;
+  if (node.next.node) return node.next.node;
+  const b = node.next.fork.find(b => !b.test || b.test(w));
+  return b.path[0];
+}
+
+function simulate(cs, starts) {
+  const w = cs.world();
+  const out = { hours:[], clues:[], truth:[], badAt:null };
+  const cur = {};
+  cs.hours.forEach((hour, t) => {
+    if (out.badAt != null) { out.hours.push({ hour, cut:true }); return; }   // 案发后这一夜就停在那里
+    cs.chars.forEach(ch => {
+      cur[ch.id] = t === 0 ? ch.nodes[starts[ch.id]] : advance(cur[ch.id], w);
+    });
+    const pos = {}, real = {};
+    cs.chars.forEach(ch => {
+      const n = cur[ch.id];
+      pos[ch.id] = { room:n.room, awake:n.awake, label:n.label, node:n.id };
+      real[ch.id] = { room:n.room, awake:n.awake };
+    });
+    const events = [], hidden = [], sneaks = [];
+    const c = {
+      t, hour, w,
+      name:id => cs.chars.find(x => x.id === id).name,
+      at:(id, nodeId) => pos[id].node === nodeId,
+      atAny:(id, ids) => ids.includes(pos[id].node),
+      awake:id => real[id].awake,
+      room:id => real[id].room,
+      awakeIn:(room, except) => cs.chars.filter(ch => ch.id !== except && real[ch.id].room === room && real[ch.id].awake).map(ch => ch.id),
+      see:(room, text, bad) => events.push({ room, text, bad:!!bad }),
+      doze:(id, text) => { real[id].awake = false; hidden.push({ room:real[id].room, text, who:id }); },
+      wake:(id, text) => { real[id].awake = true; if (text) hidden.push({ room:real[id].room, text, who:id }); },
+      sneak:(id, room, text, silent) => {
+        const from = real[id].room;
+        real[id].room = room;
+        if (!silent) sneaks.push({ id, from, to:room });
+        hidden.push({ room, text:text || `${cs.chars.find(x => x.id === id).name}偷偷来到${room}`, who:id, from });
+      },
+    };
+    // 明面上的动作
+    cs.chars.forEach(ch => {
+      const n = cur[ch.id];
+      if (n.does) {
+        const r = n.does(w, t, pos);
+        if (r && typeof r === 'object') {            // { text, label }：这个钟点的动作和明线写的不一样
+          if (r.label) pos[ch.id].label = r.label;
+          if (r.text) events.push({ room:n.room, text:r.text });
+        } else if (r !== false && r !== undefined || (r === undefined && n.doesText)) {
+          events.push({ room:n.room, text: typeof r === 'string' ? r : n.doesText });
+        }
+      }
+    });
+    // 暗线
+    for (const r of cs.rules) {
+      if (!r.when(c)) continue;
+      const preClue = typeof r.clue === 'function' ? r.clue(c) : null;
+      r.act(c);
+      out.truth.push({ hour, rule:r.id });
+      if (r.note) hidden.push({ room:r.noteRoom ? r.noteRoom(c) : null, text:r.note });
+      if (r.bad) {
+        if (out.badAt == null) out.badAt = hour;
+        if (cs.badSeen) events.push({ room:cs.badRoomFn ? cs.badRoomFn(w) : cs.badRoom, text:cs.badSeen, bad:true });
+      }
+      if (r.clue) {
+        const cl = preClue || r.clue;
+        const text = typeof cl.text === 'function' ? cl.text(c) : cl.text;
+        if (!out.clues.some(x => x.text === text)) out.clues.push({ hour, room:cl.room, text, rule:r.id });
+      }
+    }
+    // 证词：偷偷离开时，原房间里醒着的人会注意到
+    sneaks.forEach(s => {
+      if (w.dark) return;            // 停电时谁也看不清
+      const wit = cs.chars.filter(ch => ch.id !== s.id && real[ch.id].room === s.from && real[ch.id].awake);
+      if (wit.length) {
+        const nm = cs.chars.find(x => x.id === s.id).name;
+        const tx = `${wit.map(x => x.name).join('、')}说：${nm}有一阵子不在${s.from}`;
+        events.push({ room:s.from, text:tx, witness:true });
+        out.clues.push({ hour, room:s.from, text:`${hour} ${tx}。`, rule:'witness' });
+      }
+    });
+    out.hours.push({ hour, pos, real:JSON.parse(JSON.stringify(real)), items:cs.items(w), events, hidden });
+  });
+  out.end = cs.ending(w);
+  return out;
+}
+
+/* =========================================================
+   关卡 · 雪岭山庄
+   ========================================================= */
+const CASES = [
+
+  /* ================= 教学 · 生日蛋糕 ================= */
+  {
+    id:'tutorial', tab:'教学', title:'生日蛋糕',
+    brief:'今晚是爸爸的生日，蛋糕放在厨房的餐桌上，要等他 20:00 下班回家。按原本的安排，蛋糕撑不到那时候。',
+    goal:'蛋糕留到 20:00',
+    hours:['18:00','19:00','20:00'],
+    rooms:['卧室','客厅','厨房'],
+    scene:['蛋糕：厨房的餐桌上'],
+    // 教学步骤：done(s) 为真时打勾
+    guide:[
+      { text:'每一列是一个人，从上往下是他的时间点。点一个时间点，他这一夜就从那里开始。先点一下妈妈的时间轴。',
+        done:s => !!s.touched.mom },
+      { text:'点「推演这一夜」。每过一个钟点，每个人往下走一格，走到最后一格就停住。',
+        done:s => s.runs.length > 0 },
+      { text:'推演表只显示明线。妹妹明面上一直在客厅，厨房却留下了奶油脚印：她偷偷溜过去了，这就是暗线。痕迹和证词都记在下方的「推演记录」里。',
+        done:s => s.runs.some(x => !x.r.end.ok) },
+      { text:'妹妹在「写作业」之后分了叉，没走过的路显示为「？」，走哪条路的条件要靠自己推断。把她的起点改到「写作业」，再推演一次。',
+        done:s => s.runs.some(x => x.starts.sis === 'hw') },
+      { text:'让蛋糕留到 20:00。破案后可以查看「真实经过」和所有暗线。',
+        done:s => s.solved },
+    ],
+    world:() => ({ cake:true, stored:false }),
+    items:w => [{ room:'厨房', text: !w.cake ? '蛋糕 ✕' : w.stored ? '蛋糕（柜子里）' : '蛋糕', bad:!w.cake }],
+    chars:[
+      { id:'mom', name:'妈妈', short:'妈', start:'fold', tree:[
+        { id:'fold', label:'叠衣服', room:'卧室', awake:true },
+        { id:'store', label:'把蛋糕收进柜子', room:'厨房', awake:true,
+          does:w => { if (!w.cake) return false; w.stored = true; }, doesText:'蛋糕被收进了柜子' },
+        { id:'read', label:'看书', room:'客厅', awake:true },
+      ]},
+      { id:'sis', name:'妹妹', short:'妹', start:'tv2', tree:[
+        { id:'hw', label:'写作业', room:'卧室', awake:true },
+        { fork:[
+          { cond:'若蛋糕已经收进柜子', test:w => w.stored, path:[
+            { id:'tv1', label:'看电视', room:'客厅', awake:true },
+          ]},
+          { cond:'否则', path:[
+            { id:'tv2', label:'看电视，惦记着蛋糕', room:'客厅', awake:true },
+          ]},
+        ]},
+      ]},
+    ],
+    rules:[
+      { id:'sis-eat', who:'妹妹', bad:true,
+        truth:'妹妹惦记着蛋糕时，只要厨房里没人醒着，就会偷偷溜进厨房，把蛋糕吃掉。',
+        clue:{ room:'厨房', text:'餐桌边有一串小小的奶油脚印。' },
+        when:c => c.w.cake && !c.w.stored && c.at('sis', 'tv2') && c.awakeIn('厨房', 'sis').length === 0,
+        act:c => { c.sneak('sis', '厨房', '妹妹溜进厨房，吃掉了蛋糕'); c.w.cake = false; } },
+    ],
+    achievements:[
+      { open:true, id:'rookie', name:'新手侦探', desc:'完成教学，让蛋糕留到了 20:00。', test:x => x.r.end.ok },
+    ],
+    badSeen:'蛋糕不见了', badRoom:'厨房',
+    ending:w => w.cake ? { ok:true, text:'20:00，爸爸回家时，蛋糕完好无损。' } : { ok:false, text:'爸爸回家时，蛋糕已经没了。' },
+  },
+
+  /* ================= 第一案 · 烧不掉的遗嘱 ================= */
+  {
+    id:'will', tab:'第一案', title:'烧不掉的遗嘱',
+    brief:'老爷的遗嘱今晚 22:00 由律师当众宣读，宣读后放回书房，明早送去公证。按原本的安排，到 01:00 遗嘱就会被烧成灰。律师的明线无法调整。',
+    goal:'遗嘱留到 01:00 之后',
+    hours:['22:00','23:00','00:00','01:00'],
+    rooms:['书房','大厅','厨房','卧室'],
+    scene:['遗嘱：书房的书桌上','书房壁炉：没生火','22:00 律师宣读遗嘱：财产归小女儿'],
+    world:() => ({ will:true, fire:false, announced:false, litAt:99, scared:false, noWood:false }),
+    items:w => [
+      { room:'书房', text: w.will ? '遗嘱' : '遗嘱 ✕', bad:!w.will },
+      { room:'书房', text: w.fire ? '炉火·燃' : '炉火·冷' },
+    ],
+    chars:[
+      { id:'lawyer', name:'律师', short:'律', fixed:true, start:'read', tree:[
+        { id:'read', label:'宣读遗嘱', room:'大厅', awake:true,
+          does:w => { w.announced = true; }, doesText:'律师宣读了遗嘱' },
+        { id:'guard', label:'守着遗嘱', room:'书房', awake:true },
+      ]},
+      { id:'keeper', name:'女管家', short:'管', start:'wash', tree:[
+        { id:'wash', label:'洗碗', room:'厨房', awake:true },
+        { id:'soup', label:'煮汤', room:'厨房', awake:true },
+        { id:'fire', label:'给书房生火', room:'书房', awake:true,
+          does:(w, t) => {
+            if (w.noWood) return '干柴都没了，书房的火生不起来';
+            w.fire = true; w.litAt = t;
+          }, doesText:'书房壁炉生上了火' },
+        { id:'bed', label:'就寝', room:'卧室', awake:false },
+      ]},
+      { id:'son', name:'长子', short:'长', start:'hunt', tree:[
+        { id:'hunt', label:'打猎归来', room:'大厅', awake:true },
+        { fork:[
+          { cond:'若遗嘱已宣读', test:w => w.announced, path:[
+            { id:'slam', label:'摔门回房', room:'卧室', awake:true },
+            { id:'down', label:'半夜下楼', room:'大厅', awake:true },
+          ]},
+          { cond:'否则', path:[
+            { id:'wine', label:'去厨房喝酒', room:'厨房', awake:true },
+            { id:'roam', label:'醉醺醺地游荡', room:'大厅', awake:true },
+          ]},
+        ]},
+      ]},
+      { id:'girl', name:'小女儿', short:'女', start:'piano', tree:[
+        { id:'write', label:'练字', room:'卧室', awake:true },
+        { id:'piano', label:'弹琴', room:'大厅', awake:true },
+        { fork:[
+          { cond:'若书房生着火，而且她没被吓到', test:w => w.fire && !w.scared, path:[
+            { id:'readw', label:'去书房看遗嘱', room:'书房', awake:true },
+            { id:'copy', label:'抄写遗嘱', room:'书房', awake:true },
+            { id:'sleepd', label:'伏在书桌上睡着', room:'书房', awake:false },
+          ]},
+          { cond:'否则', path:[
+            { id:'bedg', label:'回房睡觉', room:'卧室', awake:false },
+          ]},
+        ]},
+      ]},
+    ],
+    rules:[
+      { id:'fire-out', who:'壁炉', public:true, truth:'壁炉里的柴只够烧三个钟点。',
+        when:c => c.w.fire && c.t >= c.w.litAt + 3,
+        act:c => { c.w.fire = false; c.w.burnedOut = true; c.see('书房', '壁炉里的火熄了'); } },
+      { id:'scare', who:'长子',
+        truth:'长子摔门回房时，要是小女儿也在卧室，会被吓得不轻。她之后就不敢一个人去书房了。',
+        clue:{ room:'卧室', text:'小女儿说，她今晚不想一个人待着。' },
+        when:c => !c.w.scared && c.at('son', 'slam') && c.room('girl') === '卧室' && c.awake('girl'),
+        act:c => { c.w.scared = true; } },
+      { id:'wood', who:'女管家',
+        truth:'长子在厨房喝闷酒时，女管家心疼他，会把干柴都抱去给他烤火。之后书房的火就生不起来了。',
+        clue:{ room:'厨房', text:'柴房里的干柴少了一大半，厨房的灶膛却烧得通红。' },
+        when:c => !c.w.noWood && c.at('son', 'wine') && c.room('keeper') === '厨房' && c.awake('keeper'),
+        act:c => { c.w.noWood = true; } },
+      { id:'girl-cold', who:'小女儿',
+        truth:'炉火熄了以后书房冷得厉害，待在书房的小女儿撑不住，会回房睡觉。',
+        when:c => c.w.burnedOut && c.room('girl') === '书房' && c.awake('girl'),
+        act:c => { c.sneak('girl', '卧室', '小女儿冷得受不了，回房睡了', true); c.doze('girl', '小女儿睡下了'); } },
+      { id:'lawyer-cold', who:'律师',
+        truth:'书房没有炉火时，律师受不了冷，会偷偷溜去厨房烤火。',
+        when:c => c.at('lawyer', 'guard') && !c.w.fire,
+        act:c => c.sneak('lawyer', '厨房', '律师嫌书房太冷，溜去厨房烤火') },
+      { id:'lawyer-doze', who:'律师',
+        truth:'炉火生起的那个钟点律师还精神；之后书房暖烘烘的，他就会打起瞌睡。',
+        when:c => c.at('lawyer', 'guard') && c.w.fire && c.t > c.w.litAt,
+        act:c => c.doze('lawyer', '律师在炉边打起了瞌睡') },
+      { id:'son-burn', who:'长子', bad:true,
+        truth:'长子听到遗嘱后怀恨在心。半夜下楼时，只要书房里没人醒着，他就会溜进去把遗嘱烧掉。',
+        clue:{ room:'书房', text:'壁炉边有猎靴留下的泥印。' },
+        when:c => c.w.will && c.at('son', 'down') && c.awakeIn('书房', 'son').length === 0,
+        act:c => { c.sneak('son', '书房', '长子溜进书房，烧掉了遗嘱'); c.w.will = false; } },
+      { id:'son-accident', who:'长子', bad:true,
+        truth:'长子喝醉后会四处游荡。书房里没人醒着时，他会晃进去找老爷的白兰地，打翻的酒和烛台把遗嘱烧着了。',
+        clue:{ room:'书房', text:'书桌下有一只打翻的酒杯，地毯湿了一片。' },
+        when:c => c.w.will && c.at('son', 'roam') && c.awakeIn('书房', 'son').length === 0,
+        act:c => { c.sneak('son', '书房', '醉醺醺的长子晃进书房，打翻了酒杯'); c.w.will = false; } },
+    ],
+    hints:[
+      '律师的明线无法调整。「守着遗嘱」不代表他一直醒着，也不代表他一直在书房。',
+      '分叉口看的是上一个钟点结束时的局面。对比走到不同分支的两次推演，找出在那之前谁做了不同的事。',
+      '书房太冷，有人待不住；书房太暖，有人会犯困。',
+      '壁炉里的火烧不了一整夜。',
+      '两个人在同一个房间碰面，可能会改变第三个人之后的去向：有人会被吓到，有人会把东西送掉。',
+      '长子在哪个钟点下楼，取决于他从自己明线的哪一格开始。',
+    ],
+    achievements:[
+      { open:true, id:'kept', name:'完璧归赵', desc:'让遗嘱完好地留到天亮。', test:x => x.r.end.ok },
+      { id:'ash', name:'柴尽火灭', desc:'书房的炉火在夜里熄灭了。', test:x => x.fired.has('fire-out') },
+      { id:'bang', name:'砰！', desc:'有人摔门的时候，隔壁正好有人。', test:x => x.fired.has('scare') },
+    ],
+    badSeen:'遗嘱被烧了', badRoom:'书房',
+    ending:w => w.will ? { ok:true, text:'01:00 过后，遗嘱还好好地放在书桌上。' } : { ok:false, text:'到了 01:00，书房里只剩一撮纸灰。' },
+  },
+  {
+    id:'snow', tab:'第二案', title:'雪岭山庄',
+    brief:'暴风雪封了山，电话线也断了。晚餐时，山庄主人沈先生说明早要宣布一件事。按原本的安排，搜救队天亮赶到时，沈先生已经死了。沈先生的明线无法调整。',
+    goal:'沈先生活到 02:00 之后',
+    // 成就：x = { r:本次推演, s:本关状态, cs, fired:Set(本次触发的暗线), initial:是否原本的安排 }
+    achievements:[
+      { open:true, id:'plan', name:'原计划', desc:'一处不改，照原本的安排推演一次。', test:x => x.initial },
+      { open:true, id:'nohint', name:'无需提示', desc:'一条提示都没看就破了案。', test:x => x.r.end.ok && x.s.hintsOpen <= x.cs.hints.filter(h => h.free).length },
+      { open:true, id:'fast', name:'十步之内', desc:'十次推演之内破了案。', test:x => x.r.end.ok && x.s.runs.length <= 10 },
+      { open:true, id:'safe', name:'平安夜', desc:'让沈先生平安活到天亮。', test:x => x.r.end.ok },
+      { id:'tea', name:'哎！不是，你——', desc:'沈先生在 22:00 就遇害了。', test:x => x.r.badAt === '22:00' },
+      { id:'double', name:'Double Kill!', desc:'沈先生和韩先生都没能活到天亮。', test:x => x.fired.has('han-freeze') },
+      { id:'empty', name:'国王的新药', desc:'林医生没配药就去送药了。',
+        test:x => x.r.hours.some(h => !h.cut && h.events.some(e => e.text.includes('林医生空着手来了'))) },
+      { id:'slack', name:'带薪摸鱼', desc:'阿梅来铺床时，沈先生已经睡下了。',
+        test:x => x.r.hours.some(h => !h.cut && h.events.some(e => e.text.includes('阿梅没法铺床'))) },
+      { id:'power', name:'村里通电了', desc:'第一次让发电机撑过了午夜。',
+        test:x => x.r.hours.some(h => h.hour === '00:00' && !h.cut) && !x.fired.has('power') },
+      { id:'allways', name:'死法大全', desc:'解锁沈先生的四种死法。', test:x => ['shen-insom', 'shen-poison', 'jie-rage', 'jie-kill'].every(id => x.s.fired[id]) },
+      { id:'paths', name:'岔路尽头', desc:'在推演中走遍每一条岔路。', test:x => x.cs.chars.every(ch => ch.order.every(n => x.s.revealed.has(n.id))) },
+      { id:'forgot', name:'哦对，忘了说了', desc:'推演了 10 次，第一条提示自动揭开了。', test:x => x.s.runs.length >= 10 },
+      { id:'hundred', name:'是没有喜欢的颜色吗？', desc:'推演了 100 次。', test:x => x.s.runs.length >= 100 },
+    ],
+    // 可依次揭开的提示：这一关用到的机制，从弱到强
+    hints:[
+      { free:true, autoAt:10,      // 推演满 10 次自动揭开；揭开它不算用了提示
+        text:'沈先生整理文件时，会把书房里的人都打发出去。去书房有两条路：走廊，或者厨房的后楼梯。（推演满十次后自动揭开；揭开这一条不影响「无需提示」成就。）' },
+      '推演表只记录明线：每个人「应该」在哪里、在做什么。一个人是否真的在那儿、是否醒着，要从痕迹和证词里推断。',
+      '醒着的人会看住自己所在的房间。大多数坏事只在「没人看着」或「两人独处」时发生。',
+      '分叉口看的是上一个钟点结束时的局面。对比走到不同分支的两次推演，看看在那之前谁做了不同的事。',
+      '午夜后发电机会停，除非有人及时加满油。黑暗里守在路上的人什么也看不见，也不会留下证词。',
+      '沈先生午夜前拿不到安眠药会出事；药送出去以后、他服下之前，放药的房间没人看着的话，药可能被换掉。',
+      '守着的人可能被弄得不起作用：被灌醉、喝了下过药的咖啡或茶，或者找不到要用的东西。想想他们之前和谁在同一个房间待过。',
+      '有人留下的一样东西，会让凶手不再害怕路上的守卫。那之后，只有守在沈先生身边才有用。',
+      '两个心怀不轨的人待在同一个房间时，谁都不会动手。',
+    ],
+    hours:['22:00','23:00','00:00','01:00'],
+    rooms:['大厅','书房','厨房','走廊','主卧','客房'],
+    scene:['发电机的油撑不过午夜','医生随身带着药箱','客人们都住在二楼客房'],
+    world:() => ({ axe:false, armed:false, alive:true, fueled:false, noFuel:false, spiked:false, sleepy:false, dark:false, drunk:false, pillReady:false, tampered:false, pillIn:null, poison:false, bedMade:false }),
+    items:w => [
+      ...(w.dark ? [{ room:'大厅', text:'停电' }] : []),
+      ...(w.pillIn && !w.taken ? [{ room:w.pillIn, text:'安眠药' }] : []),
+    ],
+    chars:[
+      { id:'shen', name:'沈先生', short:'沈', fixed:true, start:'tea', tree:[
+        { id:'tea', label:'和客人喝茶', room:'大厅', awake:true },
+        { id:'papers', label:'整理文件', room:'书房', awake:true },
+        { fork:[
+          { cond:'若午夜前拿到了安眠药', test:w => !!w.pillIn, path:[
+            { id:'pill', label:'服药就寝', room:'主卧', awake:false },
+            { id:'deep', label:'熟睡', room:'主卧', awake:false },
+          ]},
+          { cond:'否则', path:[
+            { id:'insom', label:'睡不着，回书房', room:'书房', awake:true },
+          ]},
+        ]},
+      ]},
+      { id:'zhou', name:'老周', short:'周', start:'clear', tree:[
+        { id:'doors', label:'检查门窗', room:'走廊', awake:true },
+        { id:'clear', label:'收拾餐桌', room:'大厅', awake:true },
+        { id:'fuel', label:'给发电机加油', room:'厨房', awake:true,
+          does:w => {
+            if (w.noFuel) return '老周找不到油桶';
+            if (w.drunk) return '老周醉醺醺的，把油洒了一地';
+            w.fueled = true; return '发电机加满了油';
+          } },
+        { id:'patrol', label:'巡视走廊', room:'走廊', awake:true },
+        { id:'zbed', label:'回房休息', room:'客房', awake:false },
+      ]},
+      { id:'mei', name:'阿梅', short:'梅', start:'dish', tree:[
+        { id:'iron', label:'熨衣服', room:'客房', awake:true },
+        { id:'dish', label:'洗碗', room:'厨房', awake:true },
+        { id:'snack', label:'送夜宵', room:'书房', awake:true,
+          does:(w, t, pos) => pos.shen.room === '书房' ? false
+            : { label:'送夜宵，书房没人', text:'书房里没人，阿梅把夜宵放在桌上等着' } },
+        { id:'bed', label:'铺床', room:'主卧', awake:true,
+          does:(w, t, pos) => {
+            if (pos.shen.room === '主卧' && !pos.shen.awake)
+              return { label:'没法铺床', text:'沈先生已经睡下了，阿梅没法铺床，就在床边守着' };
+            w.bedMade = true;
+          }, doesText:'主卧的床铺好了' },
+        { id:'mbed', label:'回房睡觉', room:'客房', awake:false },
+      ]},
+      { id:'lin', name:'林医生', short:'林', start:'cards', tree:[
+        { id:'cards', label:'打牌', room:'大厅', awake:true },
+        { id:'mix', label:'回房配药', room:'客房', awake:true,
+          does:w => { w.pillReady = true; }, doesText:'安眠药配好了' },
+        { fork:[
+          { cond:'若主卧的床已经铺好', test:w => w.bedMade, path:[
+            { id:'deliver', label:'送药', room:'主卧', awake:true,
+              does:w => { if (!w.pillReady) return '林医生空着手来了：药还没配'; if (w.pillIn) return false; w.pillIn = '主卧'; w.poison = w.tampered; }, doesText:'安眠药放在了床头' },
+            { id:'lbed1', label:'睡下', room:'客房', awake:false },
+          ]},
+          { cond:'否则', path:[
+            { id:'leave', label:'送药', room:'书房', awake:true,
+              does:w => { if (!w.pillReady) return '林医生空着手来了：药还没配'; if (w.pillIn) return false; w.pillIn = '书房'; w.poison = w.tampered; }, doesText:'安眠药放在了书桌上' },
+            { id:'lbed2', label:'睡下', room:'客房', awake:false },
+          ]},
+        ]},
+      ]},
+      { id:'xu', name:'许秘书', short:'许', start:'type', tree:[
+        { id:'type', label:'打字', room:'书房', awake:true },
+        { id:'smoke', label:'喝咖啡', room:'厨房', awake:true },
+        { id:'xroom', label:'回房', room:'客房', awake:true },
+      ]},
+      { id:'jie', name:'阿杰', short:'杰', start:'drink', tree:[
+        { id:'drink', label:'喝酒', room:'大厅', awake:true },
+        { id:'cig', label:'抽烟', room:'厨房', awake:true },
+        { id:'jroom', label:'回房', room:'客房', awake:true },
+      ]},
+      { id:'han', name:'韩先生', short:'韩', start:'fire', tree:[
+        { id:'fire', label:'烤火', room:'大厅', awake:true },
+        { id:'gear', label:'检查装备', room:'客房', awake:true },
+        { id:'snow', label:'看雪', room:'走廊', awake:true },
+      ]},
+    ],
+    rules:[
+      { id:'shen-alone', who:'沈先生',
+        truth:'沈先生整理文件时，不许任何人留在书房，在场的人都会被他打发到大厅去。',
+        when:c => c.at('shen', 'papers') && c.awakeIn('书房', 'shen').length > 0,
+        act:c => c.awakeIn('书房', 'shen').forEach(x => c.sneak(x, '大厅', `${c.name(x)}被沈先生打发到了大厅`, true)) },
+      { id:'jie-fuel', who:'阿杰',
+        truth:'阿杰独自在厨房抽烟时，会把发电机的油桶藏进柴房。',
+        clue:{ room:'厨房', text:'柴房的木柴堆后面露出了油桶的一角。' },
+        when:c => !c.w.noFuel && !c.w.fueled && c.at('jie', 'cig') && c.awakeIn('厨房', 'jie').length === 0,
+        act:c => { c.w.noFuel = true; } },
+      { id:'xu-spike', who:'许秘书',
+        truth:'许秘书独自在厨房煮咖啡时，会往咖啡壶里下安眠的药。之后去厨房加油的老周会顺手喝一杯，巡视走廊时就会睡着。',
+        clue:{ room:'厨房', text:'咖啡壶底有一层白色的沉淀。' },
+        when:c => !c.w.spiked && c.at('xu', 'smoke') && c.awakeIn('厨房', 'xu').length === 0,
+        act:c => { c.w.spiked = true; } },
+      { id:'zhou-coffee', who:'老周', public:true, truth:'老周去厨房加油时会喝一杯咖啡。',
+        when:c => c.at('zhou', 'fuel') && c.w.spiked,
+        act:c => { c.w.sleepy = true; } },
+      { id:'power', who:'发电机', public:true, truth:'午夜一到，发电机没油就会停。',
+        when:c => c.t >= 2 && !c.w.fueled && !c.w.dark,
+        act:c => { c.w.dark = true; c.see('大厅', '发电机停了，山庄一片漆黑'); } },
+      { id:'jie-smoked', who:'阿杰', public:true, hideTruth:true, truth:'',
+        when:c => c.at('jie', 'cig'),
+        act:c => { c.w.jieSmoked = true; } },
+      { id:'jie-drank', who:'阿杰', public:true, hideTruth:true, truth:'',
+        when:c => c.at('jie', 'drink'),
+        act:c => { c.w.jieDrank = true; } },
+      { id:'jie-pills', who:'阿杰',
+        truth:'阿杰在客房碰上林医生配药时，会趁他不注意顺走几片安眠药，放进同在客房的阿梅的茶里。阿梅之后到了主卧就会睡着。',
+        clue:{ room:'客房', text:'阿梅的茶杯底有药片化开的残渣。' },
+        when:c => !c.w.meiDrugged && c.at('lin', 'mix') && c.room('jie') === '客房' && c.awake('jie')
+          && c.room('mei') === '客房' && c.awake('mei'),
+        act:c => { c.w.meiDrugged = true; } },
+      { id:'mei-doze', who:'阿梅',
+        truth:'喝了下过药的茶，阿梅在主卧里会撑不住睡过去。',
+        when:c => c.w.meiDrugged && c.room('mei') === '主卧' && c.awake('mei'),
+        act:c => c.doze('mei', '阿梅靠着床边睡着了') },
+      { id:'jie-drink', who:'阿杰',
+        truth:'阿杰和老周在大厅碰上时，会拉着他灌酒。老周醉了以后，加油会把油洒掉，巡视走廊时会靠着墙睡着。',
+        clue:{ room:'大厅', text:'大厅的茶几上多了两只空酒杯。' },
+        when:c => !c.w.drunk && c.room('jie') === '大厅' && c.room('zhou') === '大厅' && c.awake('jie') && c.awake('zhou'),
+        act:c => { c.w.drunk = true; } },
+      { id:'zhou-doze', who:'老周',
+        truth:'喝醉或是喝了下药咖啡的老周，巡视走廊时会靠着墙睡着。',
+        when:c => c.at('zhou', 'patrol') && (c.w.drunk || c.w.sleepy),
+        act:c => c.doze('zhou', '老周靠着墙打起了呼噜') },
+      { id:'han-busy', who:'韩先生', public:true, hideTruth:true, truth:'',
+        when:c => !c.at('han', 'snow') && !c.w.hanBusy,
+        act:c => { c.w.hanBusy = true; } },
+      { id:'han-cold', who:'韩先生',
+        truth:'韩先生之前忙过别的事，停电时还醒着。他察觉到走廊冷得厉害，看完雪就回客房睡了。',
+        when:c => c.w.dark && c.w.hanBusy && c.room('han') === '走廊' && c.awake('han'),
+        act:c => c.sneak('han', '客房', '韩先生觉得太冷，看完雪回客房睡了', true) },
+      { id:'han-tired', who:'韩先生',
+        truth:'韩先生白天在雪里走了一整天，过了午夜，他在哪儿都会睡着。',
+        when:c => c.t >= 2 && c.awake('han'),
+        act:c => c.doze('han', '韩先生累得睡着了') },
+      { id:'xu-swap', who:'许秘书',
+        truth:'许秘书想要沈先生的命。安眠药送出去以后、沈先生服下之前，只要放药的房间里没人醒着，她就会溜过去把药换成毒药——放在主卧床头的药，她能赶在沈先生回房前换掉；放在书房的药，沈先生会直接带在身上。',
+        clue:c => ({ room:c.w.pillIn, text:'安眠药的瓶盖拧得太紧，不像医生的手法。' }),
+        when:c => c.w.alive && c.w.pillIn && !c.w.taken && !(c.at('shen', 'pill') && c.w.pillIn === '书房') && !c.w.tampered && c.awake('xu')
+          && c.awakeIn(c.w.pillIn, 'xu').length === 0,
+        act:c => { if (c.room('xu') !== c.w.pillIn) c.sneak('xu', c.w.pillIn, '许秘书溜过去换掉了安眠药'); c.w.tampered = true; c.w.poison = true; } },
+      { id:'han-freeze', who:'韩先生',
+        truth:'停电后鼓风机也停了，走廊冷得像冰窖。一整晚都在窗边看雪的韩先生没察觉到冷，就在窗边睡着了，到天亮前被冻死。',
+        clue:{ room:'走廊', text:'走廊的窗边结了一层厚厚的霜。' },
+        when:c => c.hour === '01:00' && c.w.dark && !c.w.hanBusy && c.room('han') === '走廊' && !c.awake('han') && !c.w.hanDead,
+        act:c => { c.w.hanDead = true; c.see('走廊', '韩先生冻僵在了窗边', true); } },
+      { id:'shen-insom', who:'沈先生', bad:true,
+        truth:'沈先生午夜前拿不到医生的安眠药就会失眠。他会吞下自己私藏的强效药，剂量大得要命。',
+        clue:{ room:'书房', text:'书桌抽屉里有一个空了的私人药瓶。' },
+        when:c => c.w.alive && c.at('shen', 'insom') && c.t === 3,
+        act:c => { c.w.alive = false; c.w.where = '书房'; } },
+      { id:'shen-poison', who:'沈先生', bad:true,
+        truth:'沈先生服下的安眠药如果被换过，他就再也醒不过来了。',
+        clue:{ room:'主卧', text:'床头的水杯里有一股苦杏仁味。' },
+        when:c => c.w.alive && c.at('shen', 'pill') && c.w.poison,
+        act:c => { c.w.alive = false; c.w.where = '主卧'; } },
+      { id:'shen-take', who:'沈先生', public:true, hideTruth:true, truth:'沈先生服下安眠药。',
+        when:c => c.at('shen', 'pill') && !c.w.taken,
+        act:c => { c.w.taken = true; } },
+      { id:'han-axe', who:'韩先生',
+        truth:'韩先生检查装备时，把冰镐留在了客房的桌上，之后再没拿走。',
+        when:c => c.at('han', 'gear') && !c.w.axe,
+        act:c => { c.w.axe = true; } },
+      { id:'jie-arm', who:'阿杰',
+        truth:'阿杰回房后看见桌上的冰镐，就顺手藏进了外套里。拿着冰镐，他就不怕路上撞见人了。',
+        clue:{ room:'客房', text:'韩先生的冰镐不见了。' },
+        when:c => c.w.axe && !c.w.armed && c.at('jie', 'jroom'),
+        act:c => { c.w.armed = true; } },
+      { id:'jie-rage', who:'阿杰', bad:true,
+        truth:'阿杰喝过酒，脾气就压不住。他和沈先生单独待在一起（身边没有第三个醒着的人）时，会为了钱跟他吵起来，失手把他推倒。',
+        clue:c => ({ room:c.room('shen'), text:`${c.room('shen')}的地毯上有打翻的酒和挣扎的痕迹。` }),
+        when:c => c.w.alive && c.w.jieDrank && c.awake('jie') && c.awake('shen') && c.room('jie') === c.room('shen')
+          && c.awakeIn(c.room('shen'), 'shen').length === 1,
+        act:c => { c.w.alive = false; c.w.where = c.room('shen'); } },
+      { id:'jie-kill', who:'阿杰', bad:true,
+        truth:'阿杰欠了一大笔债，沈先生明早要宣布的正是剥夺他的继承权。他回房后会偷偷去找沈先生。去主卧要穿过走廊；去书房可以走走廊，也可以绕厨房的后楼梯，他会挑没人的那条。路上有人醒着、又亮着灯，他就不敢；沈先生身边有别人醒着，他也不敢。',
+        clue:c => {
+          const rm = c.room('shen');
+          const text = c.w.armed ? `${rm}的门框上有一道被冰镐撬过的刻痕。`
+            : c.w.jieSmoked ? `${rm}的门把手上沾着烟灰。`
+            : c.w.jieDrank ? `${rm}的门把手上有一股酒气。`
+            : `${rm}门口的地毯上，留下了客房拖鞋的印子。`;
+          return { room:rm, text };
+        },
+        when:c => c.w.alive && c.at('jie', 'jroom')
+          && (c.w.armed || !(c.awakeIn('走廊', 'jie').length && !c.w.dark)
+              || (c.room('shen') === '书房' && !(c.awakeIn('厨房', 'jie').length && !c.w.dark)))
+          && c.awakeIn(c.room('shen'), 'jie').filter(x => x !== 'shen').length === 0,
+        act:c => { c.sneak('jie', c.room('shen'), '阿杰穿过走廊，摸进了沈先生的房间'); c.w.alive = false; c.w.where = c.room('shen'); } },
+    ],
+    badSeen:'沈先生遇害', badRoomFn:w => w.where,
+    ending:w => w.alive ? { ok:true, text:'天亮了，搜救队敲开大门，沈先生亲自去迎接。' }
+      : { ok:false, text:'搜救队赶到时，沈先生已经没了呼吸。' + (w.hanDead ? '韩先生也冻死在了走廊的窗边。' : '') },
+  },
+];
+
+CASES.forEach(cs => cs.chars.forEach(prepTree));
+if (typeof module !== 'undefined') module.exports = { CASES, simulate, prepTree, advance };
+
+
+/* =========================================================
+   界面
+   ========================================================= */
+const $ = q => document.querySelector(q);
+const state = CASES.map(cs => freshState(cs));
+let ci = 0;
+const CS = () => CASES[ci], ST = () => state[ci];
+const cfgText = (cs, st) => cs.chars.filter(c => !c.fixed).map(c => `${c.name}·${c.nodes[st[c.id]].label}`).join('　');
+const sameStarts = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/* ---------- 成就（保存在这个浏览器里） ---------- */
+const achKey = cs => 'timedet-ach-' + cs.id;
+function loadAch(cs) {
+  try { return new Set(JSON.parse(localStorage.getItem(achKey(cs)) || '[]')); } catch (e) { return new Set(); }
+}
+function saveAch(cs, set) {
+  try { localStorage.setItem(achKey(cs), JSON.stringify([...set])); } catch (e) {}
+}
+const achState = CASES.map(cs => ({ got:loadAch(cs), fresh:new Set() }));
+function checkAch(r) {
+  const cs = CS(), s = ST(), A = achState[ci];
+  const x = { r, s, cs, fired:new Set(r.truth.map(t => t.rule)),
+    initial:cs.chars.every(c => s.starts[c.id] === c.start) };
+  const newly = (cs.achievements || []).filter(a => !A.got.has(a.id) && a.test(x));
+  newly.forEach(a => { A.got.add(a.id); A.fresh.add(a.id); });
+  if (newly.length) { saveAch(cs, A.got); newly.forEach((a, i) => setTimeout(() => toastAch(a), 500 + i * 900)); }
+  renderAch();
+}
+function renderAch() {
+  const cs = CS(), A = achState[ci], list = cs.achievements || [];
+  $('#achSec').hidden = !list.length;
+  if (!list.length) return;
+  $('#achCount').textContent = `${list.filter(a => A.got.has(a.id)).length} / ${list.length}`;
+  $('#ach').innerHTML = list.map(a => A.got.has(a.id)
+    ? `<div class="a ${A.fresh.has(a.id) ? 'new' : ''}"><b>${a.name}</b><span>${a.desc}</span></div>`
+    : a.open ? `<div class="a lock open"><b>${a.name}</b><span>${a.desc}</span></div>`
+    : `<div class="a lock"><b>？？？</b><span>未解锁</span></div>`).join('');
+}
+function toastAch(a) {
+  const box = $('#achToast'), el = document.createElement('div');
+  el.className = 't';
+  el.innerHTML = `<small>成就解锁</small><b>${a.name}</b><span>${a.desc}</span>`;
+  box.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 3200);
+}
+
+/* ---------- 教学步骤 ---------- */
+function renderGuide() {
+  const cs = CS(), s = ST(), list = cs.guide || [];
+  $('#guide').hidden = !list.length;
+  if (!list.length) return;
+  let nowSet = false, n = 0;
+  $('#guideList').innerHTML = list.map(g => {
+    const d = g.done(s);
+    if (d) n++;
+    let cls = d ? 'done' : '';
+    if (!d && !nowSet) { cls = 'now'; nowSet = true; }
+    return `<li class="${cls}">${g.text}</li>`;
+  }).join('');
+  $('#guideCount').textContent = `${n} / ${list.length}`;
+}
+
+// 还在写的案子：只占一个标签，点开显示「开发中」
+const COMING = [{ tab:'第三案', title:'开发中' }];
+let soon = -1;
+function renderTabs() {
+  $('#tabs').hidden = CASES.length + COMING.length < 2;
+  $('#tabs').innerHTML = CASES.map((c, i) =>
+    `<button class="tab ${soon < 0 && i === ci ? 'cur' : ''}" data-i="${i}">${c.tab} · ${c.title}${state[i].solved ? '<span class="ck">✓</span>' : ''}</button>`).join('')
+    + COMING.map((c, k) => `<button class="tab soon ${soon === k ? 'cur' : ''}" data-soon="${k}">${c.tab} · ${c.title}</button>`).join('');
+  $('#tabs').querySelectorAll('.tab[data-i]').forEach(b => b.onclick = () => openCase(+b.dataset.i));
+  $('#tabs').querySelectorAll('.tab[data-soon]').forEach(b => b.onclick = () => openSoon(+b.dataset.soon));
+  $('#runCount').textContent = soon < 0 ? `推演 ${ST().runs.length} 次` : '';
+}
+function openSoon(k) {
+  soon = k;
+  $('main').hidden = true;
+  $('#soonView').hidden = false;
+  $('#soonTab').textContent = COMING[k].tab;
+  renderTabs();
+  window.scrollTo({ top:0 });
+}
+
+function openCase(i) {
+  ci = i;
+  soon = -1;
+  $('main').hidden = false;
+  $('#soonView').hidden = true;
+  const cs = CS(), s = ST();
+  $('#eyebrow').hidden = true;
+  $('#title').textContent = cs.title;
+  $('#brief').textContent = cs.brief;
+  $('#note').hidden = !cs.note;
+  $('#note').innerHTML = cs.note ? `<b>注</b>${cs.note}` : '';
+  $('#goal').textContent = cs.goal;
+  renderTabs(); renderGuide(); renderLines(); renderRuns(); renderHints(); renderAch();
+  if (s.shown >= 0) showResult(s.shown, false); else $('#resultSec').hidden = true;
+  if (s.solved) renderTruth(); else $('#truthSec').hidden = true;
+  window.scrollTo({ top:0 });
+}
+
+/* ---------- 明线 ---------- */
+function leafCount(arr) {
+  let n = 1;
+  arr.forEach(el => { if (el.fork) n = el.fork.reduce((a, b) => a + leafCount(b.path), 0); });
+  return n;
+}
+function reachFrom(node) {
+  const set = new Set(), q = [node];
+  while (q.length) {
+    const n = q.shift(); if (set.has(n)) continue; set.add(n);
+    if (!n.next) continue;
+    if (n.next.node) q.push(n.next.node); else n.next.fork.forEach(b => q.push(b.path[0]));
+  }
+  return set;
+}
+function ancestors(ch, node) {
+  const set = new Set();
+  const walk = (arr, trail) => {
+    for (const el of arr) {
+      if (el.fork) { el.fork.forEach(b => walk(b.path, trail.slice())); return; }
+      if (el === node) { trail.forEach(x => set.add(x)); return; }
+      trail.push(el);
+    }
+  };
+  walk(ch.tree, []);
+  return set;
+}
+
+function renderLines() {
+  const cs = CS(), s = ST(), box = $('#lines'), H = cs.hours.length;
+  const cur = s.shown >= 0 && sameStarts(s.runs[s.shown].starts, s.starts) ? s.runs[s.shown].r : null;
+  box.innerHTML = '';
+  cs.chars.forEach(ch => {
+    const start = ch.nodes[s.starts[ch.id]];
+    const reach = reachFrom(start), anc = ancestors(ch, start);
+    const taken = new Set(cur ? cur.hours.filter(h => !h.cut).map(h => h.pos[ch.id].node) : []);
+    const nodeHTML = n => {
+      let cls, tag = '';
+      if (reach.has(n)) {
+        const k = n.depth - start.depth;
+        if (k < H) { cls = 'in'; tag = !n.next && k < H - 1 ? `${cs.hours[k]}–${cs.hours[H - 1]}` : cs.hours[k]; }
+        else cls = 'out';
+      } else cls = anc.has(n) ? 'past' : 'off';
+      if (anc.has(n)) tag = '已过去';
+      if (n === start) cls += ' start';
+      if (taken.has(n.id)) cls += ' taken';
+      return `<button class="node ${cls}" data-id="${n.id}">
+        <span class="dot"></span>
+        <span class="st"><span class="st-l">${n.label}</span><br><span class="st-m">${n.room}${n.doesText ? ' · ' + n.doesText.replace(/了$/, '') : ''}</span></span>
+        <span class="tag num">${tag}</span></button>`;
+    };
+    const known = b => s.solved || b.path.some(n => s.revealed.has(n.id));
+    const pathHTML = arr => `<div class="path">${arr.map(el => el.fork
+      ? `<div class="fork">${el.fork.map(b => {
+          if (!known(b)) return `<div class="branch unknown"><div class="cond">&nbsp;</div><div class="q">？</div></div>`;
+          const live = cur && b.path.some(n => taken.has(n.id));
+          return `<div class="branch ${live ? 'live' : ''}"><div class="cond">${s.solved ? b.cond : '&nbsp;'}</div>${pathHTML(b.path)}</div>`;
+        }).join('')}</div>`
+      : nodeHTML(el)).join('')}</div>`;
+    const visW = arr => {           // 这一列需要的宽度：已知分支各占一份，「？」占一小格
+      let w = 0;
+      arr.forEach(el => { if (el.fork) w = el.fork.reduce((a, b) => a + (known(b) ? visW(b.path) : 60), 0); });
+      return w || 175;
+    };
+    const col = document.createElement('div');
+    col.className = 'line' + (ch.fixed ? ' fixed' : '');
+    col.style.flex = `1 0 ${Math.max(ch.fixed ? 188 : 158, visW(ch.tree) + 36)}px`;
+    col.innerHTML = `<div class="line-head"><span class="tok">${ch.short}</span><b>${ch.name}</b>${ch.fixed ? '<em>无法调整</em>' : ''}</div>${pathHTML(ch.tree)}`;
+    if (!ch.fixed) col.querySelectorAll('.node').forEach(b => b.onclick = () => setStart(ch.id, b.dataset.id));
+    box.appendChild(col);
+  });
+  $('#scene').innerHTML = `<b>现场</b>${cs.scene.map(x => `<span>${x}</span>`).join('')}`;
+}
+
+function setStart(id, nodeId) {
+  const s = ST();
+  s.touched[id] = true;
+  if (s.starts[id] !== nodeId) s.starts[id] = nodeId;
+  renderLines(); markStale();
+  renderGuide();
+}
+function markStale() {
+  const s = ST();
+  if (s.shown < 0) return;
+  const same = sameStarts(s.runs[s.shown].starts, s.starts);
+  $('#resultSec').classList.toggle('stale', !same);
+  $('#resSub').textContent = same ? subText(s.shown) : '明线已改动，需要重新推演';
+}
+const subText = i => (i === ST().runs.length - 1 ? '' : '回看 · ') + cfgText(CS(), ST().runs[i].starts);
+
+/* ---------- 推演 ---------- */
+function run() {
+  const cs = CS(), s = ST();
+  const r = simulate(cs, { ...s.starts });
+  s.runs.push({ starts:{ ...s.starts }, r });
+  r.hours.forEach(h => { if (!h.cut) Object.values(h.pos).forEach(p => s.revealed.add(p.node)); });
+  const n = s.runs.length;
+  new Set(r.truth.map(x => x.rule)).forEach(id => s.fired[id] = (s.fired[id] || 0) + 1);
+  if (r.end.ok) s.solved = true;
+  const first = (cs.hints || [])[0];
+  if (first && first.autoAt && n >= first.autoAt && s.hintsOpen < 1) { s.hintsOpen = 1; renderHints(); }
+  showResult(n - 1, true);
+  checkAch(r);
+  renderGuide();
+  renderRuns(); renderTabs();
+  if (s.solved) renderTruth();
+  $('#resultSec').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function showResult(i, fresh) {
+  const cs = CS(), s = ST(), { r } = s.runs[i];
+  s.shown = i;
+  if (fresh) s.real = false;
+  const sec = $('#resultSec');
+  sec.hidden = false; sec.classList.remove('stale');
+  $('#resTitle').textContent = `第 ${i + 1} 次推演`;
+  $('#resSub').textContent = subText(i);
+  $('#resTools').hidden = !s.solved;
+  $('#vMing').classList.toggle('on', !s.real);
+  $('#vReal').classList.toggle('on', s.real);
+  const real = s.solved && s.real;
+  const head = `<thead><tr><th></th>${cs.rooms.map(rm => `<th>${rm}</th>`).join('')}</tr></thead>`;
+  const body = r.hours.map((h, k) => {
+    if (h.cut) return `<tr class="cut" style="animation-delay:${fresh ? k * 0.12 : 0}s"><th class="num">${h.hour}</th><td colspan="${cs.rooms.length}">案发之后，推演到此为止</td></tr>`;
+    const cells = cs.rooms.map(rm => {
+      let who = '';
+      cs.chars.forEach(c => {
+        const p = h.pos[c.id], q = h.real[c.id];
+        if (!real) {
+          if (p.room === rm) who += `<div class="who"><span class="tok">${c.short}</span>${p.label}</div>`;
+          return;
+        }
+        if (q.room === rm) {
+          const moved = q.room !== p.room, dozed = p.awake && !q.awake;
+          const cls = moved ? 'sneak' : (q.awake ? '' : 'sleep');
+          who += `<div class="who ${cls}"><span class="tok ${cls}">${c.short}</span>${p.label}${moved ? '（其实在这里）' : ''}${dozed ? '（打瞌睡）' : ''}</div>`;
+        } else if (p.room === rm) {
+          who += `<div class="who gone"><span class="tok">${c.short}</span>${p.label}（人不在）</div>`;
+        }
+      });
+      const items = h.items.filter(it => it.room === rm).map(it => `<span class="item ${it.bad ? 'bad' : ''}">${it.text}</span>`).join('');
+      let evs = h.events.filter(e => e.room === rm).map(e => `<div class="ev ${e.bad ? 'bad' : ''} ${e.witness ? 'wit' : ''}">${e.text}</div>`).join('');
+      if (real) evs += h.hidden.filter(e => e.room === rm).map(e => `<div class="ev hid">${e.text}</div>`).join('');
+      return `<td>${who}${items}${evs}</td>`;
+    }).join('');
+    return `<tr style="animation-delay:${fresh ? k * 0.12 : 0}s"><th class="num">${h.hour}</th>${cells}</tr>`;
+  }).join('');
+  $('#grid').innerHTML = head + `<tbody>${body}</tbody>`;
+  const v = $('#verdict');
+  v.className = 'verdict ' + (r.end.ok ? 'ok' : 'bad');
+  v.textContent = (r.end.ok ? '✓ ' : '✕ ') + r.end.text;
+  const tr = r.clues.map(c => c.rule === 'witness' ? c.text : `${c.room}：${c.text}`);
+  $('#traces').innerHTML = `<span class="lbl">痕迹与证词</span>${tr.length ? tr.join('　') : '没有发现异常'}`;
+  renderRuns(); renderLines();
+}
+function setView(real) { ST().real = real; showResult(ST().shown, false); }
+
+function renderHints() {
+  const cs = CS(), s = ST(), list = cs.hints || [];
+  $('#hintSec').hidden = !list.length;
+  if (!list.length) return;
+  $('#hintCount').textContent = `${s.hintsOpen} / ${list.length}`;
+  $('#hints').innerHTML = s.hintsOpen
+    ? list.slice(0, s.hintsOpen).map(t => `<li>${typeof t === 'string' ? t : t.text}</li>`).join('')
+    : '<li class="none">提示从弱到强排列，可以一条一条揭开。</li>';
+  const b = $('#hintBtn');
+  b.disabled = s.hintsOpen >= list.length;
+  b.textContent = s.hintsOpen >= list.length ? '提示已全部揭开' : (s.hintsOpen ? '再揭开一条' : '揭开一条提示');
+}
+function revealHint() {
+  const s = ST();
+  if (s.hintsOpen < (CS().hints || []).length) { s.hintsOpen++; renderHints(); }
+}
+function renderRuns() {
+  const ol = $('#runs'), cs = CS(), s = ST();
+  if (!s.runs.length) { ol.innerHTML = '<li class="empty">还没有推演。</li>'; return; }
+  const seen = new Set();
+  const rows = s.runs.map((x, i) => {
+    const cl = x.r.clues.map(c => {
+      const txt = c.rule === 'witness' ? c.text : c.text;
+      const nw = !seen.has(txt); seen.add(txt);
+      return `<div class="cl"><span class="k">${c.rule === 'witness' ? '证词' : c.room}</span><span>${txt}${nw ? '<span class="nw">新</span>' : ''}</span></div>`;
+    }).join('') || '<div class="cl none"><span></span><span>没有发现异常</span></div>';
+    return `<li data-i="${i}" class="${i === s.shown ? 'shown' : ''}">
+      <span class="n num">#${i + 1}</span><span class="cfg">${cfgText(cs, x.starts)}</span>
+      <span class="res ${x.r.end.ok ? 'ok' : 'bad'}">${x.r.end.ok ? '✓ 阻止' : '✕ 案发'}</span>${cl}</li>`;
+  });
+  ol.innerHTML = rows.reverse().join('');
+  ol.querySelectorAll('li[data-i]').forEach(li => li.onclick = () => {
+    const i = +li.dataset.i;
+    ST().starts = { ...ST().runs[i].starts };
+    showResult(i, false);
+    $('#resultSec').scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+}
+
+function forkList(cs) {
+  const out = [];
+  cs.chars.forEach(ch => {
+    const walk = (arr, prev) => arr.forEach((el, i) => {
+      if (!el.fork) return;
+      const before = arr[i - 1] || prev;
+      out.push({ who:ch.name, text:`「${before.label}」之后：` + el.fork.map(b => `${b.cond}，${b.path.map(n => n.label + '（' + n.room + '）').join(' → ')}`).join('；') + '。' });
+      el.fork.forEach(b => walk(b.path, before));
+    });
+    walk(ch.tree, null);
+  });
+  return out;
+}
+function renderTruth() {
+  const cs = CS(), s = ST(), sec = $('#truthSec');
+  const firstWin = s.runs.findIndex(x => x.r.end.ok) + 1;
+  const next = CASES[ci + 1];
+  sec.innerHTML = `
+    <h2>真相 · 暗线</h2>
+    <p class="lead">第 ${firstWin} 次推演告破。</p>
+    <ul class="truth">${cs.rules.filter(r => !r.hideTruth).map(r => `<li><span class="w">${r.who}</span><span>${r.truth}</span>
+      <span class="s ${s.fired[r.id] ? 'hit' : ''}">${s.fired[r.id] ? `在 ${s.fired[r.id]} 次推演中发生过` : '从未被触发'}</span></li>`).join('')}</ul>
+    <h2 style="margin-top:6px">分叉的条件</h2>
+    <p class="lead">推演时看不到的岔路口：</p>
+    <ul class="truth">${forkList(cs).map(f => `<li><span class="w">${f.who}</span><span>${f.text}</span><span class="s"></span></li>`).join('')}</ul>
+    ${next ? `<div class="next"><button id="nextBtn">下一案：${next.title} →</button></div>` : ''}`;
+  sec.hidden = false;
+  if (next) $('#nextBtn').onclick = () => openCase(ci + 1);
+  $('#resTools').hidden = false;
+}
+
+function freshState(cs) {
+  return {
+    starts:Object.fromEntries(cs.chars.map(c => [c.id, c.start])),
+    runs:[], fired:{}, shown:-1, solved:false, real:false, hintsOpen:0, touched:{},
+    revealed:new Set(cs.chars.map(c => c.start)),   // 走过（或起点所在）的节点；没走过的分支显示为「？」
+  };
+}
+function newGame() {
+  const cs = CS();
+  state[ci] = freshState(cs);
+  achState[ci] = { got:new Set(), fresh:new Set() };
+  saveAch(cs, achState[ci].got);
+  $('#achToast').innerHTML = '';
+  $('#newDlg').hidden = true;
+  openCase(ci);
+}
+$('#newBtn').addEventListener('click', () => {
+  $('#newText').textContent = `「${CS().title}」的推演记录、已揭开的提示和已解锁的成就都会被清空，无法恢复。其他案子不受影响。`;
+  $('#newDlg').hidden = false;
+});
+$('#newNo').addEventListener('click', () => { $('#newDlg').hidden = true; });
+$('#newDlg').addEventListener('click', e => { if (e.target.id === 'newDlg') $('#newDlg').hidden = true; });
+$('#newYes').addEventListener('click', newGame);
+$('#runBtn').addEventListener('click', run);
+$('#hintBtn').addEventListener('click', revealHint);
+$('#vMing').addEventListener('click', () => setView(false));
+$('#vReal').addEventListener('click', () => setView(true));
+openCase(0);
+</script>
+
+</body>
+</html>
