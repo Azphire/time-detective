@@ -154,7 +154,7 @@ function renderLines() {
         <span class="st"><span class="st-l">${n.label}</span><br><span class="st-m">${n.room}${n.doesText ? ' · ' + n.doesText.replace(/了$/, '') : ''}</span>${tag ? `<span class="tag2 num">${n === start ? '▸ ' : ''}${tag}</span>` : ''}</span>
         <span class="tag num">${tag}</span></button>`;
     };
-    const known = b => s.solved || b.path.some(n => s.revealed.has(n.id));
+    const known = b => b.path.some(n => s.revealed.has(n.id));   // 只展开推演中真正走到过的分支；破案后也不自动展开（分叉条件在真相区「分叉的条件」里讲）
     const pathHTML = arr => `<div class="path">${arr.map(el => el.fork
       ? `<div class="fork">${el.fork.map(b => {
           if (!known(b)) return `<div class="branch unknown"><div class="cond">&nbsp;</div><div class="q">？</div></div>`;
@@ -318,7 +318,7 @@ function forkList(cs) {
     const walk = (arr, prev) => arr.forEach((el, i) => {
       if (!el.fork) return;
       const before = arr[i - 1] || prev;
-      out.push({ who:ch.name, text:`「${before.label}」之后：` + el.fork.map(b => `${b.cond}，${b.path.map(n => n.label + '（' + n.room + '）').join(' → ')}`).join('；') + '。' });
+      out.push({ who:ch.name, text:`「${before.label}」之后：` + el.fork.map(b => `${b.cond}，${b.path.map((n, j) => n.fork ? `再分两路（见「${(b.path[j - 1] || before).label}」之后）` : n.label + '（' + n.room + '）').join(' → ')}`).join('；') + '。' });
       el.fork.forEach(b => walk(b.path, before));
     });
     walk(ch.tree, null);
