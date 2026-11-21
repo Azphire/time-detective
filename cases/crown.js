@@ -48,7 +48,7 @@
   const deaths = r => r.end.ok || !r.end.key ? [] : String(r.end.key).split(',');
   const CASE = {
     id:'crown', tab:'第五案', title:'加冕前夜',
-    brief:'老国王已去世。天亮之后，年轻的女王将会加冕。按照原本的安排，新女王死在了加冕前夜。女王的明线无法调整。',
+    brief:'老国王已去世。天亮之后，年轻的女王将会加冕。按照原本的安排，新女王死在了加冕前夜。皇宫中还有其他命案在酝酿，无论是谁死在这一夜，都会令加冕礼蒙上血色。女王的明线无法调整。',
     goal:'这一夜谁都不能死',
     achievements:[
       { open:true, id:'plan', name:'原计划', desc:'一处不改，照原本的安排推演一次。', test:x => x.initial },
