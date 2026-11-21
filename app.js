@@ -188,7 +188,8 @@ function renderLines() {
       arr.forEach(el => { if (el.fork) w = el.fork.reduce((a, b) => a + (known(b) ? visW(b.path, true) : 60), 0); });
       return inner ? Math.max(w, 175) : (w || 175);   // 分支里的格子本身也要放得下（分叉里再套分叉时，内层两个「？」加起来比一个格子还窄）
     };
-    const nested = arr => arr.some(el => el.fork && el.fork.some(b => b.path.some(x => x.fork)));
+        // 分叉里再套分叉，或者三路以上的分叉（第六案武生：三个「？」就比默认最窄列宽宽），列宽要按分叉结构算；普通两路分叉照旧
+    const tight = arr => arr.some(el => el.fork && (el.fork.length > 2 || el.fork.some(b => b.path.some(x => x.fork))));
     const minW = arr => {            // 最窄能挤到多少：每支至少 124px，「？」46px，支间隔 14px，每套一层分叉多 6px 缩进
       let w = 124;
       arr.forEach(el => { if (el.fork) w = Math.max(w, el.fork.reduce((a, b) => a + (known(b) ? minW(b.path) + 6 : 46), 0) + 14 * (el.fork.length - 1)); });
@@ -198,7 +199,7 @@ function renderLines() {
     col.className = 'line' + (ch.fixed ? ' fixed' : '');
     const w = Math.max(ch.fixed ? 220 : 200, visW(ch.tree) + 36);   // 理想列宽：按内容，不铺满
     col.style.flex = `0 1 ${w}px`;
-    col.style.minWidth = Math.round(Math.max(158, w * 0.8, nested(ch.tree) ? minW(ch.tree) + 42 : 0)) + 'px';  // 人多时先压缩到这里，再横向滚动；不能窄过分叉的结构
+    col.style.minWidth = Math.round(Math.max(158, w * 0.8, tight(ch.tree) ? minW(ch.tree) + 42 : 0)) + 'px';  // 人多时先压缩到这里，再横向滚动；不能窄过分叉的结构
     col.innerHTML = `<div class="line-head"><span class="tok">${ch.short}</span><b>${ch.name}</b>${ch.fixed ? '<em>无法调整</em>' : ''}</div>${pathHTML(ch.tree)}`;
     if (!ch.fixed) col.querySelectorAll('.node').forEach(b => b.onclick = () => setStart(ch.id, b.dataset.id));
     box.appendChild(col);
