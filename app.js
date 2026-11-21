@@ -18,11 +18,30 @@ function saveAch(cs, set) {
   try { localStorage.setItem(achKey(cs), JSON.stringify([...set])); } catch (e) {}
 }
 const achState = CASES.map(cs => ({ got:loadAch(cs), fresh:new Set() }));
+// 单个成就的判定出错时只跳过它，不能连累同一次推演里的其他成就
+const achTest = (a, x) => { try { return !!a.test(x); } catch (e) { try { console.warn('成就判定出错：', a.name, e); } catch (_) {} return false; } };
+// 打开页面时按存档里的推演记录补发成就：以前通关时成就还没做出来、或者当时没判定成功的，都补上（标「新」，不弹窗）
+CASES.forEach((cs, i) => {
+  const s = state[i], A = achState[i], list = cs.achievements || [];
+  if (!s.runs.length || list.every(a => A.got.has(a.id))) return;
+  const sx = { runs:[], revealed:new Set(cs.chars.map(c => c.start)), fired:{}, solved:false, hintsOpen:s.hintsOpen, touched:s.touched, starts:{} };
+  let added = false;
+  s.runs.forEach(run => {
+    const r = run.r;
+    sx.starts = run.starts; sx.runs.push(run);
+    r.hours.forEach(h => { if (!h.cut) Object.values(h.pos).forEach(p => sx.revealed.add(p.node)); });
+    new Set(r.truth.map(t => t.rule)).forEach(id => sx.fired[id] = (sx.fired[id] || 0) + 1);
+    if (r.end.ok) sx.solved = true;
+    const x = { r, s:sx, cs, fired:new Set(r.truth.map(t => t.rule)), initial:cs.chars.every(c => run.starts[c.id] === c.start) };
+    list.forEach(a => { if (!A.got.has(a.id) && achTest(a, x)) { A.got.add(a.id); A.fresh.add(a.id); added = true; } });
+  });
+  if (added) saveAch(cs, A.got);
+});
 function checkAch(r) {
   const cs = CS(), s = ST(), A = achState[ci];
   const x = { r, s, cs, fired:new Set(r.truth.map(t => t.rule)),
     initial:cs.chars.every(c => s.starts[c.id] === c.start) };
-  const newly = (cs.achievements || []).filter(a => !A.got.has(a.id) && a.test(x));
+  const newly = (cs.achievements || []).filter(a => !A.got.has(a.id) && achTest(a, x));
   newly.forEach(a => { A.got.add(a.id); A.fresh.add(a.id); });
   if (newly.length) { saveAch(cs, A.got); newly.forEach((a, i) => setTimeout(() => toastAch(a), 500 + i * 900)); }
   renderAch();
