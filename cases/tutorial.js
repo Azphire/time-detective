@@ -45,7 +45,7 @@ registerCase({
   ],
   rules:[
     { id:'sis-eat', who:'妹妹', bad:true,
-      truth:'妹妹惦记着蛋糕时，只要厨房里没人醒着，就会偷偷溜进厨房，把蛋糕吃掉。',
+      truth:'妹妹惦记着蛋糕时，只要厨房里没人，就会偷偷溜进厨房，把蛋糕吃掉。',
       clue:{ room:'厨房', text:'餐桌边有一串小小的奶油脚印。' },
       when:c => c.w.cake && !c.w.stored && c.at('sis', 'tv2') && c.awakeIn('厨房', 'sis').length === 0,
       act:c => { c.sneak('sis', '厨房', '妹妹溜进厨房，吃掉了蛋糕'); c.w.cake = false; } },

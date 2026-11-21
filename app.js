@@ -159,19 +159,27 @@ function renderLines() {
       ? `<div class="fork">${el.fork.map(b => {
           if (!known(b)) return `<div class="branch unknown"><div class="cond">&nbsp;</div><div class="q">？</div></div>`;
           const live = cur && b.path.some(n => taken.has(n.id));
-          return `<div class="branch ${live ? 'live' : ''}"><div class="cond">${s.solved ? b.cond : '&nbsp;'}</div>${pathHTML(b.path)}</div>`;
+          // 按各支实际需要的宽度分配（不再平分）：分支里又套分叉时，宽的那支要多分一些，最窄也要放得下里面的分叉
+          const grow = visW(b.path, true), least = minW(b.path);
+          return `<div class="branch ${live ? 'live' : ''}" style="flex:${grow} 1 0px;min-width:${least}px"><div class="cond">${s.solved ? b.cond : '&nbsp;'}</div>${pathHTML(b.path)}</div>`;
         }).join('')}</div>`
       : nodeHTML(el)).join('')}</div>`;
-    const visW = arr => {           // 这一列需要的宽度：已知分支各占一份，「？」占一小格
+    const visW = (arr, inner) => {  // 这一列需要的宽度：已知分支各占一份，「？」占一小格
       let w = 0;
-      arr.forEach(el => { if (el.fork) w = el.fork.reduce((a, b) => a + (known(b) ? visW(b.path) : 60), 0); });
-      return w || 175;
+      arr.forEach(el => { if (el.fork) w = el.fork.reduce((a, b) => a + (known(b) ? visW(b.path, true) : 60), 0); });
+      return inner ? Math.max(w, 175) : (w || 175);   // 分支里的格子本身也要放得下（分叉里再套分叉时，内层两个「？」加起来比一个格子还窄）
+    };
+    const nested = arr => arr.some(el => el.fork && el.fork.some(b => b.path.some(x => x.fork)));
+    const minW = arr => {            // 最窄能挤到多少：每支至少 124px，「？」46px，支间隔 14px，每套一层分叉多 6px 缩进
+      let w = 124;
+      arr.forEach(el => { if (el.fork) w = Math.max(w, el.fork.reduce((a, b) => a + (known(b) ? minW(b.path) + 6 : 46), 0) + 14 * (el.fork.length - 1)); });
+      return w;
     };
     const col = document.createElement('div');
     col.className = 'line' + (ch.fixed ? ' fixed' : '');
     const w = Math.max(ch.fixed ? 220 : 200, visW(ch.tree) + 36);   // 理想列宽：按内容，不铺满
     col.style.flex = `0 1 ${w}px`;
-    col.style.minWidth = Math.round(Math.max(158, w * 0.8)) + 'px';  // 人多时先压缩到这里，再横向滚动
+    col.style.minWidth = Math.round(Math.max(158, w * 0.8, nested(ch.tree) ? minW(ch.tree) + 42 : 0)) + 'px';  // 人多时先压缩到这里，再横向滚动；不能窄过分叉的结构
     col.innerHTML = `<div class="line-head"><span class="tok">${ch.short}</span><b>${ch.name}</b>${ch.fixed ? '<em>无法调整</em>' : ''}</div>${pathHTML(ch.tree)}`;
     if (!ch.fixed) col.querySelectorAll('.node').forEach(b => b.onclick = () => setStart(ch.id, b.dataset.id));
     box.appendChild(col);

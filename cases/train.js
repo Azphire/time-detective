@@ -157,7 +157,8 @@
       { id:'wife-doze', who:'贺太太',
         truth:'牛奶里被下了药的贺太太，一回到包厢就睡着了。',
         when:c => c.w.wifeDrugged && c.room('wife') === '头等·甲' && c.awake('wife'),
-        act:c => c.doze('wife', '贺太太靠在床头睡着了') },
+        act:c => { c.doze('wife', '贺太太靠在床头睡着了');
+          c.see('头等·甲', c.t % 2 ? '头等·甲的包厢早早熄了灯，帘子后面没有声响' : '头等·甲的包厢里，有人睡得很沉，说了一句含糊的梦话'); } },
       { id:'wife-coffee', who:'贺太太',
         truth:'喝了阿福送来的咖啡，贺太太吃了药也睡不着，一直醒着坐在床头。',
         when:c => c.w.coffee && !c.w.wifeDrugged && c.at('wife', 'wpill'),
@@ -176,7 +177,7 @@
         when:c => c.hour === '00:00' && c.room('zhao') === '二等车',
         act:c => { if (!c.awake('zhao')) { c.wake('zhao'); c.see('二等车', '乘警叫醒赵先生查票'); } c.w.copSus = true; } },
       { id:'recog', who:'苏小姐',
-        truth:'苏小姐和赵先生醒着待在同一节车厢时，她会认出赵先生是报上通缉的逃犯。赵先生察觉到了，一夜都不敢睡。',
+        truth:'苏小姐和赵先生待在同一节车厢时，她会认出赵先生是报上通缉的逃犯。赵先生察觉到了，一夜都不敢睡。',
         clue:{ room:'头等·乙', text:'苏小姐的笔记本里夹着一张通缉令的剪报。' },
         when:c => !c.w.recog && c.awake('su') && c.awake('zhao') && c.room('su') === c.room('zhao'),
         act:c => { c.w.recog = true; } },
@@ -188,7 +189,8 @@
       { id:'zhao-drunk', who:'赵先生', public:true,
         truth:'赵先生酒量差，喝闷酒喝着喝着就趴在桌上睡着了（心里有鬼、睡不着的时候除外）。',
         when:c => c.at('zhao', 'zdrink') && !c.w.copSus && !c.w.recog,
-        act:c => c.doze('zhao', '赵先生喝多了，趴在桌上睡着了') },
+        act:c => { c.doze('zhao', '赵先生喝多了，趴在桌上睡着了');
+          c.see(c.room('zhao'), c.t % 2 ? `${c.room('zhao')}的桌上歪着一只空酒瓶，有人枕着胳膊一动不动` : `${c.room('zhao')}里飘着一股酒气，夹着断断续续的鼾声`); } },
       { id:'zhao-up', who:'赵先生', public:true, hideTruth:true, truth:'',
         when:c => (c.w.copSus || c.w.recog) && !c.awake('zhao'), act:c => c.wake('zhao', '赵先生睁着眼躺着，一点睡意也没有') },
       { id:'tang-turn', who:'小唐',
@@ -217,14 +219,14 @@
           && (c.room('he') === c.room('su') || openHour(c) || between(c.room('he'), c.room('su')).every(r => guests(c.awakeIn(r, 'he')).length === 0)),
         act:c => kill(c, 'su', 'he', c.room('su'), '贺老板悄悄去找苏小姐') },
       { id:'zhao-su', who:'赵先生', bad:true,
-        truth:'认出自己的苏小姐落单时（身边没有别人醒着），醒着的赵先生会去灭口。路过的车厢里有人醒着他就不去，除非是停站或过隧道。',
+        truth:'认出自己的苏小姐落单时（身边没有别人醒着），赵先生会去灭口。路过的车厢里有人醒着他就不去，除非是停站或过隧道。',
         clue:c => ({ room:c.room('su'), text:`${c.room('su')}的门把手上沾着二等车的煤灰。` }),
         when:c => c.w.recog && alive(c, 'su') && c.awake('zhao')
           && c.awakeIn(c.room('su'), 'su').filter(x => x !== 'zhao').length === 0
           && (c.room('zhao') === c.room('su') || blockers(c, 'zhao', c.room('su')).length === 0),
         act:c => kill(c, 'su', 'zhao', c.room('su'), '赵先生去找苏小姐') },
       { id:'zhao-cop', who:'赵先生', bad:true,
-        truth:'认定乘警起了疑心后，醒着的赵先生会趁乘警落单（身边没有别人醒着）下手。路过的车厢里有人醒着他就不去，除非是停站或过隧道。',
+        truth:'认定乘警起了疑心后，赵先生会趁乘警落单（身边没有别人醒着）下手。路过的车厢里有人醒着他就不去，除非是停站或过隧道。',
         clue:c => ({ room:c.room('lu'), text:`${c.room('lu')}里，乘警的哨子掉在了地上。` }),
         when:c => c.w.copSus && alive(c, 'lu') && c.awake('zhao')
           && c.awakeIn(c.room('lu'), 'lu').filter(x => x !== 'zhao').length === 0

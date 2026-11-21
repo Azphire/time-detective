@@ -76,7 +76,8 @@ registerCase({
     { id:'girl-cold', who:'小女儿',
       truth:'炉火熄了以后书房冷得厉害，待在书房的小女儿撑不住，会回房睡觉。',
       when:c => c.w.burnedOut && c.room('girl') === '书房' && c.awake('girl'),
-      act:c => { c.sneak('girl', '卧室', '小女儿冷得受不了，回房睡了', true); c.doze('girl', '小女儿睡下了'); } },
+      act:c => { c.sneak('girl', '卧室', '小女儿冷得受不了，回房睡了', true); c.doze('girl', '小女儿睡下了');
+        c.see('卧室', '卧室的门关着，门缝底下透不出一点光'); } },
     { id:'lawyer-cold', who:'律师',
       truth:'书房没有炉火时，律师受不了冷，会偷偷溜去厨房烤火。',
       when:c => c.at('lawyer', 'guard') && !c.w.fire,
@@ -84,7 +85,8 @@ registerCase({
     { id:'lawyer-doze', who:'律师',
       truth:'炉火生起的那个钟点律师还精神；之后书房暖烘烘的，他就会打起瞌睡。',
       when:c => c.at('lawyer', 'guard') && c.w.fire && c.t > c.w.litAt,
-      act:c => c.doze('lawyer', '律师在炉边打起了瞌睡') },
+      act:c => { c.doze('lawyer', '律师在炉边打起了瞌睡');
+        c.see('书房', c.t % 2 ? '书房里的翻页声停了好一阵，只剩炉火噼啪作响' : '书房里有人轻轻打着呼噜'); } },
     { id:'son-burn', who:'长子', bad:true,
       truth:'长子听到遗嘱后怀恨在心。半夜下楼时，只要书房里没人醒着，他就会溜进去把遗嘱烧掉。',
       clue:{ room:'书房', text:'壁炉边有猎靴留下的泥印。' },

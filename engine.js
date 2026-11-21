@@ -11,6 +11,7 @@
    暗线（rules）：每个钟点按顺序检查，条件满足就发生，玩家看不见。
      · c.sneak(人, 房间)：偷偷离开明线上的位置。推演表仍显示明线位置；
        如果原房间里有别人醒着，他们会注意到这个人不见了（证词）。
+     · c.note(房间, 文字)：只在「真实经过」里显示的一句话，不移动任何人。
    ========================================================= */
 
 function prepTree(ch) {
@@ -69,13 +70,14 @@ function simulate(cs, starts) {
       room:id => real[id].room,
       awakeIn:(room, except) => cs.chars.filter(ch => ch.id !== except && real[ch.id].room === room && real[ch.id].awake && !gone(ch.id)).map(ch => ch.id),
       see:(room, text, bad) => events.push({ room, text, bad:!!bad }),
-      doze:(id, text) => { real[id].awake = false; hidden.push({ room:real[id].room, text, who:id }); },
+      doze:(id, text) => { real[id].awake = false; if (text) hidden.push({ room:real[id].room, text, who:id }); },
       wake:(id, text) => { real[id].awake = true; if (text) hidden.push({ room:real[id].room, text, who:id }); },
+      note:(room, text) => hidden.push({ room, text }),        // 只在「真实经过」里显示的一句话，不改变任何人的位置
       sneak:(id, room, text, silent) => {
         const from = real[id].room;
         real[id].room = room;
         if (!silent) sneaks.push({ id, from, to:room });
-        hidden.push({ room, text:text || `${cs.chars.find(x => x.id === id).name}偷偷来到${room}`, who:id, from });
+        if (text !== '') hidden.push({ room, text:text || `${cs.chars.find(x => x.id === id).name}偷偷来到${room}`, who:id, from });   // text 传 '' 表示不留文字
       },
     };
     // 明面上的动作

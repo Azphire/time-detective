@@ -159,7 +159,8 @@ registerCase({
     { id:'mei-doze', who:'阿梅',
       truth:'喝了下过药的茶，阿梅在主卧里会撑不住睡过去。',
       when:c => c.w.meiDrugged && c.room('mei') === '主卧' && c.awake('mei'),
-      act:c => c.doze('mei', '阿梅靠着床边睡着了') },
+      act:c => { c.doze('mei', '阿梅靠着床边睡着了');
+        c.see('主卧', '主卧里静悄悄的，铺床的窸窣声早就停了'); } },
     { id:'jie-drink', who:'阿杰',
       truth:'阿杰和老周在大厅碰上时，会拉着他灌酒。老周醉了以后，加油会把油洒掉，巡视走廊时会靠着墙睡着。',
       clue:{ room:'大厅', text:'大厅的茶几上多了两只空酒杯。' },
@@ -168,7 +169,8 @@ registerCase({
     { id:'zhou-doze', who:'老周',
       truth:'喝醉或是喝了下药咖啡的老周，巡视走廊时会靠着墙睡着。',
       when:c => c.at('zhou', 'patrol') && (c.w.drunk || c.w.sleepy),
-      act:c => c.doze('zhou', '老周靠着墙打起了呼噜') },
+      act:c => { c.doze('zhou', '老周靠着墙打起了呼噜');
+        c.see('走廊', c.t % 2 ? '走廊里隐约传来一阵呼噜声' : '走廊尽头有个人影靠着墙，好半天没挪动'); } },
     { id:'han-busy', who:'韩先生', public:true, hideTruth:true, truth:'',
       when:c => !c.at('han', 'snow') && !c.w.hanBusy,
       act:c => { c.w.hanBusy = true; } },
@@ -179,7 +181,8 @@ registerCase({
     { id:'han-tired', who:'韩先生',
       truth:'韩先生白天在雪里走了一整天，过了午夜，他在哪儿都会睡着。',
       when:c => c.t >= 2 && c.awake('han'),
-      act:c => c.doze('han', '韩先生累得睡着了') },
+      act:c => { c.doze('han', '韩先生累得睡着了');
+        c.see(c.room('han'), c.t % 2 ? `${c.room('han')}的角落里，有人发出沉沉的鼻息` : `${c.room('han')}里有人缩成一团，一动不动`); } },
     { id:'xu-swap', who:'许秘书',
       truth:'许秘书想要沈先生的命。安眠药送出去以后、沈先生服下之前，只要放药的房间里没人醒着，她就会溜过去把药换成毒药——放在主卧床头的药，她能赶在沈先生回房前换掉；放在书房的药，沈先生会直接带在身上。',
       clue:c => ({ room:c.w.pillIn, text:'安眠药的瓶盖拧得太紧，不像医生的手法。' }),
